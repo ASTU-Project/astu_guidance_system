@@ -131,3 +131,11 @@
         </div>
     </div>
 @endsection
+
+@push('styles')
+    {{-- Page specific styles --}}
+@endpush
+
+@push('scripts')
+    {{-- Page specific scripts --}}
+@endpush

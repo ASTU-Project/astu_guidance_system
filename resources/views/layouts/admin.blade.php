@@ -85,14 +85,35 @@
                     <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
                     <span>Students</span>
                 </a>
-                <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                <a href="{{ route('admin.calendar') }}" class="nav-item {{ request()->routeIs('admin.calendar') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
                     <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
-                    <span>Dashboard</span>
+                    <span>Calendar</span>
                 </a>
-                <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                <a href="{{ route('admin.map') }}" class="nav-item {{ request()->routeIs('admin.map') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
                     <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
-                    <span>Dashboard</span>
+                    <span>Map</span>
                 </a>
+                <a href="{{ route('admin.policy') }}" class="nav-item {{ request()->routeIs('admin.policy') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <span>Policy</span>
+                </a>
+                <a href="{{ route('admin.blog') }}" class="nav-item {{ request()->routeIs('admin.blog') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <span>Blog</span>
+                </a>
+                <a href="{{ route('admin.departments') }}" class="nav-item {{ request()->routeIs('admin.departments') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <span>Departments</span>
+                </a>
+                <a href="{{ route('admin.message') }}" class="nav-item {{ request()->routeIs('admin.message') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <span>Message</span>
+                </a>
+                <a href="{{ route('admin.automate') }}" class="nav-item {{ request()->routeIs('admin.automate') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <span>Automate</span>
+                </a>
+                
             </nav>
             <div class="px-4 py-3 border-t border-white/[.06]">
                 <form action="{{route('logout')}}" method="POST" class="flex items-center justify-between text-[15px] font-semibold text-slate-400 ">

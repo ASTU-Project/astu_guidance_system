@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
-@section('title', 'Students Managment')
-@section('page-title', 'Students')
+@section('title', 'Chat')
+@section('page-title', 'Automate')
 
 @section('content')
     <div class="bg-white p-6 text-xl">
