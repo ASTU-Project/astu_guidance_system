@@ -5,8 +5,11 @@ import Layout from './Layouts/Layout';
 
 createInertiaApp({
   resolve: (name) => {
-    const pages = import.meta.glob('./Pages/**/*.jsx', { eager: true });
-    let page = pages[`./Pages/${name}.jsx`];
+    const pages = import.meta.glob('./{Pages,Auth}/**/*.jsx', { eager: true });
+    let page = pages[`./${name}.jsx`] || pages[`./Pages/${name}.jsx`] || pages[`./Auth/${name}.jsx`];
+    if (!page) {
+      throw new Error(`Page not found: ${name}`);
+    }
     page.default.layout = page.default.layout || (page => createElement(Layout, null, page));
     return page;
   },
