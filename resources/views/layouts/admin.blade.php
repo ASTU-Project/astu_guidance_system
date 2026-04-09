@@ -81,6 +81,18 @@
                     <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
                     <span>Dashboard</span>
                 </a>
+                <a href="{{ route('admin.students') }}" class="nav-item {{ request()->routeIs('admin.students') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <span>Students</span>
+                </a>
+                <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <span>Dashboard</span>
+                </a>
             </nav>
             <div class="px-4 py-3 border-t border-white/[.06]">
                 <form action="{{route('logout')}}" method="POST" class="flex items-center justify-between text-[15px] font-semibold text-slate-400 ">
