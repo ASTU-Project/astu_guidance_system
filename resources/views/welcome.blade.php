@@ -15,7 +15,7 @@
                 <a href="#map" class="transition hover:text-slate-950">Map</a>
                 <a href="/login" class="transition hover:text-slate-950">Login</a>
             </nav>
-            <a href="/login" class="rounded-full bg-slate-950 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">Login</a>
+            <a href="/login" class="rounded-md bg-slate-950 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">Login</a>
         </div>
     </header>
 
@@ -34,11 +34,11 @@
                             ASTU Management System gives students and staff a clear entry into campus tools, GPA tracking, calendar events, maps, and intelligent support.
                         </p>
                         <div class="flex flex-wrap gap-4">
-                            <a href="/login" class="inline-flex items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Login</a>
-                            <a href="#about" class="inline-flex items-center justify-center rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-200">Learn more</a>
+                            <a href="/login" class="inline-flex items-center justify-center rounded-md bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Login</a>
+                            <a href="#about" class="inline-flex items-center justify-center rounded-md bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-200">Learn more</a>
                         </div>
                     </div>
-                    <div class="rounded-[2rem] bg-slate-950 p-8 text-white shadow-xl shadow-slate-900/5">
+                    <div class="rounded-md bg-slate-950 p-8 text-white shadow-xl shadow-slate-900/5">
                         <div class="rounded-[1.75rem] bg-slate-900 p-8">
                             <p class="text-sm font-semibold uppercase tracking-[0.28em] text-slate-300">Student dashboard</p>
                             <h2 class="mt-6 text-3xl font-semibold leading-tight">Track your GPA, events, and campus life in one dashboard.</h2>
@@ -47,11 +47,11 @@
                             </p>
                         </div>
                         <div class="mt-8 grid gap-4 sm:grid-cols-2">
-                            <div class="rounded-3xl bg-slate-800 p-4">
+                            <div class="rounded-md bg-slate-800 p-4">
                                 <p class="text-sm uppercase tracking-[0.24em] text-slate-400">Students</p>
                                 <p class="mt-3 text-3xl font-semibold">18K+</p>
                             </div>
-                            <div class="rounded-3xl bg-slate-800 p-4">
+                            <div class="rounded-md bg-slate-800 p-4">
                                 <p class="text-sm uppercase tracking-[0.24em] text-slate-400">Events</p>
                                 <p class="mt-3 text-3xl font-semibold">120+</p>
                             </div>
@@ -63,24 +63,24 @@
 
         <section id="about" class="mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-10">
             <div class="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-                <div class="rounded-[2rem] bg-white p-10 shadow-xl shadow-slate-900/5">
+                <div class="rounded-md bg-white p-10 shadow-xl shadow-slate-900/5">
                     <span class="inline-flex rounded-full bg-slate-100 px-4 py-1 text-sm font-semibold text-slate-900">About ASTU Management</span>
                     <h2 class="mt-6 text-3xl font-semibold text-slate-950">A calm, human-first portal for your campus life.</h2>
                     <p class="mt-5 text-base leading-8 text-slate-600">
                         This landing page is a static showcase of the system experience. Later it will connect students with GPA tracking, campus maps, course guidance, and the admin dashboard.
                     </p>
                     <div class="mt-8 grid gap-4 sm:grid-cols-2">
-                        <div class="rounded-3xl bg-slate-100 p-5">
+                        <div class="rounded-md bg-slate-100 p-5">
                             <h3 class="font-semibold text-slate-950">Student first</h3>
                             <p class="mt-2 text-sm text-slate-600">Simple access to your academic profile, map, and important campus links.</p>
                         </div>
-                        <div class="rounded-3xl bg-slate-100 p-5">
+                        <div class="rounded-md bg-slate-100 p-5">
                             <h3 class="font-semibold text-slate-950">Clean design</h3>
                             <p class="mt-2 text-sm text-slate-600">A calm and readable layout without unnecessary decorations.</p>
                         </div>
                     </div>
                 </div>
-                <div class="overflow-hidden rounded-[2rem] bg-slate-950 shadow-xl shadow-slate-900/5">
+                <div class="overflow-hidden rounded-md bg-slate-950 shadow-xl shadow-slate-900/5">
                     <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80" alt="Students working on a campus project" class="h-full w-full object-cover" />
                 </div>
             </div>
@@ -96,7 +96,7 @@
                             A simple map preview helps everyone discover buildings, libraries, and campus services. This is a static placeholder that can be replaced with an interactive map later.
                         </p>
                     </div>
-                    <div class="overflow-hidden rounded-[2rem] bg-slate-950">
+                    <div class="overflow-hidden rounded-md bg-slate-950">
                         <iframe title="ASTU map preview" class="h-96 w-full border-0" loading="lazy" src="https://maps.google.com/maps?q=adama%20science%20and%20technology%20university&t=&z=14&ie=UTF8&iwloc=&output=embed"></iframe>
                     </div>
                 </div>

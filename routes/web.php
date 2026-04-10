@@ -48,9 +48,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/departments', [DepartmentController::class, 'index'])->name('admin.departments');
     Route::post('/admin/departments', [DepartmentController::class, 'add'])->name('admin.departments.store');
 
-        
-    // })->name('admin.departments.store');
-
     Route::get('/admin/message', function () {
         return view('admin.message');
     })->name('admin.message');
