@@ -33,11 +33,11 @@
         <div class="px-4 sm:px-5 py-4 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
             <div>
                 <h3 class="text-l font-semibold text-slate-800">
-                    Students ({{count($students)}})
+                    Students ({{ number_format($students->total()) }})
                 </h3>
             </div>
-            <div class="w-full lg:w-auto flex flex-col sm:flex-row gap-2">
-                <form action="{{ route('admin.students.index') }}" method="GET" class="relative w-full sm:w-72">
+            <form action="{{ route('admin.students.index') }}" method="GET" class="w-full lg:w-auto flex flex-col sm:flex-row gap-2">
+                <div class="relative w-full sm:w-72">
                     <i class="fa fa-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
                     <input
                         type="text"
@@ -46,34 +46,32 @@
                         placeholder="Search by name or ID"
                         class="h-9 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none"
                     >
-                </form>
-                <form action="{{ route('admin.students.index') }}" method="GET" class="flex gap-2">
+                </div>
+                <div class="flex gap-2">
                     <select
                         name="department"
                         class="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-slate-400 focus:outline-none"
                     >
                         <option value="">All Departments</option>
-                        <option value="Computer Science">Computer Science</option>
-                        <option value="Electrical Engineering">Electrical Engineering</option>
-                        <option value="Mechanical Engineering">Mechanical Engineering</option>
+                        @foreach($departments as $department)
+                            <option value="{{ $department }}" @selected(request('department') === $department)>{{ $department }}</option>
+                        @endforeach
                     </select>
                     <select
-                        name="department"
+                        name="year"
                         class="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-slate-400 focus:outline-none"
                     >
                         <option value="">Year</option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
+                        @for ($year = 1; $year <= 5; $year++)
+                            <option value="{{ $year }}" @selected((string) request('year') === (string) $year)>{{ $year }}</option>
+                        @endfor
                     </select>
                     <button type="submit" class="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800">
                         <i class="fa fa-filter text-[11px]"></i>
                         Filter
                     </button>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
 
         <!-- Table -->

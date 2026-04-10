@@ -1,7 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DepartmentController;
+use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\StudentController;
+use App\Models\Department;
+use App\Models\Student;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -16,12 +21,10 @@ Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/admin/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
+    Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
     Route::prefix('admin')
-        ->name('admin.')    
+        ->name('admin.')
         ->group(function () {
         Route::resource('students', StudentController::class);
     });
@@ -42,9 +45,11 @@ Route::middleware(['auth'])->group(function () {
         return view('admin.blog');
     })->name('admin.blog');
 
-    Route::get('/admin/departments', function () {
-        return view('admin.departments');
-    })->name('admin.departments');
+    Route::get('/admin/departments', [DepartmentController::class, 'index'])->name('admin.departments');
+    Route::post('/admin/departments', [DepartmentController::class, 'add'])->name('admin.departments.store');
+
+        
+    // })->name('admin.departments.store');
 
     Route::get('/admin/message', function () {
         return view('admin.message');
