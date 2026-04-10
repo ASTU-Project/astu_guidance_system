@@ -2,13 +2,6 @@
 
 @section('title', 'Students Managment')
 @section('page-title', 'Students')
-@php
-    $students = [
-        ['id' => 'UGR/12345/12', 'name' => 'Bilal Shemsu', 'year' => 10, 'section' => 12, 'department' => 'Computer Science', 'gpa' => 3.8],
-        ['id' => 'UGR/67890/34', 'name' => 'Amina Hassan', 'year' => 9, 'section' => 11, 'department' => 'Electrical Engineering', 'gpa' => 3.6],
-        ['id' => 'UGR/54321/56', 'name' => 'Samuel Tadesse', 'year' => 11, 'section' => 13, 'department' => 'Mechanical Engineering', 'gpa' => 3.9],
-    ]
-@endphp
 
 @section('content')
     <div class="space-y-4">
@@ -39,10 +32,12 @@
         <!-- Header -->
         <div class="px-4 sm:px-5 py-4 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
             <div>
-                <h3 class="text-l font-semibold text-slate-800">Students</h3>
+                <h3 class="text-l font-semibold text-slate-800">
+                    Students ({{count($students)}})
+                </h3>
             </div>
             <div class="w-full lg:w-auto flex flex-col sm:flex-row gap-2">
-                <form action="{{ route('admin.students') }}" method="GET" class="relative w-full sm:w-72">
+                <form action="{{ route('admin.students.index') }}" method="GET" class="relative w-full sm:w-72">
                     <i class="fa fa-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
                     <input
                         type="text"
@@ -52,7 +47,7 @@
                         class="h-9 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none"
                     >
                 </form>
-                <form action="{{ route('admin.students') }}" method="GET" class="flex gap-2">
+                <form action="{{ route('admin.students.index') }}" method="GET" class="flex gap-2">
                     <select
                         name="department"
                         class="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-slate-400 focus:outline-none"
@@ -97,14 +92,14 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse($students as $student)
                     <tr class="hover:bg-slate-50/50">
-                        <td class="px-4 sm:px-5 py-3 text-sm text-slate-500">{{ $student['id'] }}</td>
-                        <td class="px-4 sm:px-5 py-3 text-sm font-medium text-slate-800">{{ $student['name'] }}</td>
-                        <td class="px-4 sm:px-5 py-3 text-sm text-slate-600">Year {{ $student['year'] }}</td>
-                        <td class="px-4 sm:px-5 py-3 text-sm text-slate-600">Section {{ $student['section'] }}</td>
-                        <td class="px-4 sm:px-5 py-3 text-sm text-slate-600">{{ $student['department'] }}</td>
+                        <td class="px-4 sm:px-5 py-3 text-sm text-slate-500">{{ $student->student_id }}</td>
+                        <td class="px-4 sm:px-5 py-3 text-sm font-medium text-slate-800">{{ $student->name }}</td>
+                        <td class="px-4 sm:px-5 py-3 text-sm text-slate-600">Year {{ $student->current_year }}</td>
+                        <td class="px-4 sm:px-5 py-3 text-sm text-slate-600">{{ $student->current_section }}</td>
+                        <td class="px-4 sm:px-5 py-3 text-sm text-slate-600">{{ $student->department }}</td>
                         <td class="px-4 sm:px-5 py-3 text-sm">
                             <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                                {{ number_format($student['gpa'], 1) }}
+                                {{ number_format((float) $student->cgpa, 1) }}
                             </span>
                         </td>
                     </tr>
@@ -119,17 +114,61 @@
             </table>
         </div>
         <div class="px-3 sm:px-5 py-4 border-t border-slate-100 text-xs text-slate-500">
-            Showing {{ count($students) }} students
-            {{-- {{ $students->withQueryString()->links() }} --}}
+            {{ $students->withQueryString()->links('vendor.pagination.tailwind') }}
         </div>
     </div>
 </div>
 @endsection
 
 @push('styles')
-    {{-- Page specific styles --}}
+<style>
+    .pagination {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        flex-wrap: wrap;
+    }
+
+    .pagination li {
+        list-style: none;
+    }
+
+    .pagination a,
+    .pagination span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2rem;
+        height: 2rem;
+        padding: 0 0.625rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.375rem;
+        background: #ffffff;
+        color: #475569;
+        font-size: 0.75rem;
+        text-decoration: none;
+    }
+
+    .pagination a:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+        color: #0f172a;
+    }
+
+    .pagination .active span {
+        background: #0f172a;
+        border-color: #0f172a;
+        color: #ffffff;
+    }
+
+    .pagination .disabled span {
+        background: #f8fafc;
+        color: #94a3b8;
+        border-color: #e2e8f0;
+    }
+</style>
 @endpush
 
 @push('scripts')
-    {{-- Page specific scripts --}}
+{{-- Page specific scripts --}}
 @endpush

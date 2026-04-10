@@ -81,7 +81,7 @@
                     <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="{{ route('admin.students') }}" class="nav-item {{ request()->routeIs('admin.students') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                <a href="{{ route('admin.students.index') }}" class="nav-item {{ request()->routeIs('admin.students.index') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
                     <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
                     <span>Students</span>
                 </a>

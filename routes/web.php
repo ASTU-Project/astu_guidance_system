@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -19,9 +20,11 @@ Route::middleware(['auth'])->group(function () {
         return view('admin.dashboard');
     })->name('admin.dashboard');
 
-    Route::get('/admin/students', function () {
-        return view('admin.students');
-    })->name('admin.students');
+    Route::prefix('admin')
+        ->name('admin.')    
+        ->group(function () {
+        Route::resource('students', StudentController::class);
+    });
 
     Route::get('/admin/calendar', function () {
         return view('admin.calendar');
@@ -50,5 +53,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/automate', function () {
         return view('admin.automate');
     })->name('admin.automate');
+
 
 });
