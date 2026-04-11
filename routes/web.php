@@ -35,6 +35,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/map', [MapLocationController::class, 'index'])->name('admin.map');
     Route::post('/admin/map', [MapLocationController::class, 'store'])->name('admin.map.store');
     Route::delete('/admin/map/{location}', [MapLocationController::class, 'destroy'])->name('admin.map.destroy');
+    Route::put('/admin/map/{location}', [MapLocationController::class, 'update'])->name('admin.map.update');
 
     Route::get('/admin/policy', function () {
         return view('admin.policy');
