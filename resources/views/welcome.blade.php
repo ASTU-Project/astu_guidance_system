@@ -38,8 +38,8 @@
                             <a href="#about" class="inline-flex items-center justify-center rounded-md bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-200">Learn more</a>
                         </div>
                     </div>
-                    <div class="rounded-md bg-slate-950 p-8 text-white shadow-xl shadow-slate-900/5">
-                        <div class="rounded-[1.75rem] bg-slate-900 p-8">
+                    <div class="rounded-md bg-slate-600 p-8 text-white shadow-xl shadow-slate-600">
+                        <div class="rounded-md bg-slate-900 p-8">
                             <p class="text-sm font-semibold uppercase tracking-[0.28em] text-slate-300">Student dashboard</p>
                             <h2 class="mt-6 text-3xl font-semibold leading-tight">Track your GPA, events, and campus life in one dashboard.</h2>
                             <p class="mt-4 text-slate-300 leading-7">
@@ -63,7 +63,7 @@
 
         <section id="about" class="mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-10">
             <div class="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-                <div class="rounded-md bg-white p-10 shadow-xl shadow-slate-900/5">
+                <div class="">
                     <span class="inline-flex rounded-full bg-slate-100 px-4 py-1 text-sm font-semibold text-slate-900">About ASTU Management</span>
                     <h2 class="mt-6 text-3xl font-semibold text-slate-950">A calm, human-first portal for your campus life.</h2>
                     <p class="mt-5 text-base leading-8 text-slate-600">

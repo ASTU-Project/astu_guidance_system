@@ -2,10 +2,9 @@
 
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DepartmentController;
+use App\Http\Controllers\Admin\MapLocationController;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Models\Department;
-use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -33,9 +32,9 @@ Route::middleware(['auth'])->group(function () {
         return view('admin.calendar');
     })->name('admin.calendar');
 
-    Route::get('/admin/map', function () {
-        return view('admin.map');
-    })->name('admin.map');
+    Route::get('/admin/map', [MapLocationController::class, 'index'])->name('admin.map');
+    Route::post('/admin/map', [MapLocationController::class, 'store'])->name('admin.map.store');
+    Route::delete('/admin/map/{location}', [MapLocationController::class, 'destroy'])->name('admin.map.destroy');
 
     Route::get('/admin/policy', function () {
         return view('admin.policy');
