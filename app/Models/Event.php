@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\EventBase;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
@@ -12,40 +13,32 @@ class Event extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title',
-        'description',
+        'event_id',
+        'task',
         'day',
         'start_hour',
-        'start_minute',
+        'start_min',
         'end_hour',
-        'end_minute',
-        'semester',
-        'year',
-        'department',
-        'section',
+        'end_min',
         'source',
         'editable',
         'deletable',
-        'color_id',
-        'created_by',
+        'color',
         'student_id',
     ];
 
     protected $casts = [
-        'day' => 'integer',
         'start_hour' => 'integer',
-        'start_minute' => 'integer',
+        'start_min' => 'integer',
         'end_hour' => 'integer',
-        'end_minute' => 'integer',
-        'year' => 'integer',
+        'end_min' => 'integer',
         'editable' => 'boolean',
         'deletable' => 'boolean',
-        'color_id' => 'integer',
     ];
 
-    public function creator(): BelongsTo
+    public function eventBase(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(EventBase::class, 'event_id', 'event_id');
     }
 
     public function student(): BelongsTo

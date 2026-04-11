@@ -90,53 +90,51 @@
                 </table>
             </div>
         </div>
+    </div>
+    <div id="department-modal" class="{{ $errors->any() || old('name') || old('code') ? '' : 'hidden' }} fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div class="absolute inset-0 bg-slate-950/50" onclick="document.getElementById('department-modal').classList.add('hidden')"></div>
+        <div class="relative w-full max-w-lg rounded-md bg-white p-6 shadow-2xl">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-950">Add Department</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('department-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700">
+                    <i class="fa fa-times"></i>
+                </button>
             </div>
-        <div id="department-modal" class="{{ $errors->any() || old('name') || old('code') ? '' : 'hidden' }} fixed inset-0 z-50 flex items-center justify-center px-4">
-            <div class="absolute inset-0 bg-slate-950/50" onclick="document.getElementById('department-modal').classList.add('hidden')"></div>
-            <div class="relative w-full max-w-lg rounded-md bg-white p-6 shadow-2xl">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h3 class="text-lg font-semibold text-slate-950">Add Department</h3>
-                    </div>
-                    <button type="button" onclick="document.getElementById('department-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700">
-                        <i class="fa fa-times"></i>
-                    </button>
+
+            <form action="{{ route('admin.departments.store') }}" method="POST" class="mt-5 space-y-4">
+                @csrf
+                <div>
+                    <label for="department-name" class="mb-1 block text-sm font-medium text-slate-700">Department Name</label>
+                    <input id="department-name" type="text" name="name" value="{{ old('name') }}" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="e.g. Computer Science">
                 </div>
 
-                <form action="{{ route('admin.departments.store') }}" method="POST" class="mt-5 space-y-4">
-                    @csrf
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                        <label for="department-name" class="mb-1 block text-sm font-medium text-slate-700">Department Name</label>
-                        <input id="department-name" type="text" name="name" value="{{ old('name') }}" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="e.g. Computer Science">
+                        <label for="department-code" class="mb-1 block text-sm font-medium text-slate-700">Code</label>
+                        <input id="department-code" type="text" name="code" value="{{ old('code') }}" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm uppercase text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="e.g. CS">
                     </div>
-
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <label for="department-code" class="mb-1 block text-sm font-medium text-slate-700">Code</label>
-                            <input id="department-code" type="text" name="code" value="{{ old('code') }}" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm uppercase text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="e.g. CS">
-                        </div>
-                        <div>
-                            <label for="department-spot-limit" class="mb-1 block text-sm font-medium text-slate-700">Spot Limit</label>
-                            <input id="department-spot-limit" type="number" min="1" name="spot_limit" value="{{ old('spot_limit') }}" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="120">
-                        </div>
-                    </div>
-
                     <div>
-                        <label for="department-min-gpa" class="mb-1 block text-sm font-medium text-slate-700">Minimum GPA</label>
-                        <input id="department-min-gpa" type="number" min="0" max="4" step="0.01" name="min_gpa" value="{{ old('min_gpa') }}" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="2.50">
+                        <label for="department-spot-limit" class="mb-1 block text-sm font-medium text-slate-700">Spot Limit</label>
+                        <input id="department-spot-limit" type="number" min="1" name="spot_limit" value="{{ old('spot_limit') }}" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="120">
                     </div>
+                </div>
 
-                    <div class="flex items-center justify-end gap-2 pt-2">
-                        <button type="button" onclick="document.getElementById('department-modal').classList.add('hidden')" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                            Cancel
-                        </button>
-                        <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-                            Save Department
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                <div>
+                    <label for="department-min-gpa" class="mb-1 block text-sm font-medium text-slate-700">Minimum GPA</label>
+                    <input id="department-min-gpa" type="number" min="0" max="4" step="0.01" name="min_gpa" value="{{ old('min_gpa') }}" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="2.50">
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="document.getElementById('department-modal').classList.add('hidden')" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                        Save Department
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 @endsection

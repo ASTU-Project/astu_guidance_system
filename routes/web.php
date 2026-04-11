@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\CalendarController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\MapLocationController;
@@ -28,9 +29,8 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('students', StudentController::class);
     });
 
-    Route::get('/admin/calendar', function () {
-        return view('admin.calendar');
-    })->name('admin.calendar');
+    Route::get('/admin/calendar', [CalendarController::class, 'index'])->name('admin.calendar.index');
+    Route::get('/admin/calendar/edit/{id}', [CalendarController::class, 'edit'])->name('admin.calendar.edit');
 
     Route::get('/admin/map', [MapLocationController::class, 'index'])->name('admin.map');
     Route::post('/admin/map', [MapLocationController::class, 'store'])->name('admin.map.store');
