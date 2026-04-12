@@ -101,10 +101,6 @@
                     <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
                     <span>Policy</span>
                 </a>
-                <a href="{{ route('admin.blog') }}" class="nav-item {{ request()->routeIs('admin.blog') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
-                    <span>Blog</span>
-                </a>
                 <a href="{{ route('admin.message') }}" class="nav-item {{ request()->routeIs('admin.message') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
                     <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
                     <span>Message</span>

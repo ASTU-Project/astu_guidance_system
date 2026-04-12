@@ -38,47 +38,49 @@
                         @forelse($policies as $policy)
                             <tr class="hover:bg-slate-50/50">
                                 <td class="px-5 py-4">
-                                    <p class="text-sm font-semibold text-slate-900">{{ $policy['title'] }}</p>
+                                    <p class="text-sm font-semibold text-slate-900">{{ $policy->title }}</p>
                                 </td>
                                 <td class="px-5 py-4 text-sm text-slate-600">
                                     <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 uppercase">
-                                        {{ $policy['category'] }}
+                                        {{ $policy->category }}
                                     </span>
                                 </td>
                                 <td class="px-5 py-4 text-sm text-slate-600 max-w-md">
-                                    <p class="line-clamp-2">{{ $policy['summary'] }}</p>
+                                    <p class="line-clamp-2">{{ \Illuminate\Support\Str::limit($policy->content, 120) }}</p>
                                 </td>
                                 <td class="px-5 py-4 text-sm">
-                                    @if($policy['is_active'])
+                                    @if($policy->is_active)
                                         <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Active</span>
                                     @else
                                         <span class="inline-flex rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">Inactive</span>
                                     @endif
                                 </td>
-                                <td class="px-5 py-4 text-sm text-slate-600">{{ $policy['created_at']->format('M d, Y') }}</td>
+                                <td class="px-5 py-4 text-sm text-slate-600">{{ optional($policy->created_at)->format('M d, Y') }}</td>
                                 <td class="px-5 py-4 text-sm text-slate-600 gap-3 flex">
                                     <button
                                         type="button"
                                         class="js-policy-edit"
-                                        data-title="{{ $policy['title'] }}"
-                                        data-category="{{ $policy['category'] }}"
-                                        data-summary="{{ $policy['summary'] }}"
-                                        data-status="{{ $policy['is_active'] ? '1' : '0' }}"
+                                        data-id="{{ $policy->id }}"
+                                        data-update-url="{{ route('admin.policy.update', $policy->id) }}"
+                                        data-title="{{ $policy->title }}"
+                                        data-category="{{ $policy->category }}"
+                                        data-content="{{ $policy->content }}"
+                                        data-status="{{ $policy->is_active ? '1' : '0' }}"
                                     >
                                         <i class="fa fa-edit"></i>    
                                     </button>
                                      <button
                                         type="button"
                                         class="js-policy-view"
-                                        data-title="{{ $policy['title'] }}"
-                                        data-category="{{ $policy['category'] }}"
-                                        data-summary="{{ $policy['summary'] }}"
-                                        data-status="{{ $policy['is_active'] ? 'Active' : 'Inactive' }}"
-                                        data-updated="{{ $policy['created_at']->format('M d, Y') }}"
+                                        data-title="{{ $policy->title }}"
+                                        data-category="{{ $policy->category }}"
+                                        data-summary="{{ $policy->content }}"
+                                        data-status="{{ $policy->is_active ? 'Active' : 'Inactive' }}"
+                                        data-updated="{{ optional($policy->created_at)->format('M d, Y') }}"
                                     >
                                         <i class="fa fa-eye"></i>    
                                     </button>
-                                    <form action="#" method="POST" onsubmit="return confirm('Delete this Policy or Rule?')">
+                                    <form action="{{ route('admin.policy.destroy', $policy->id) }}" method="POST" onsubmit="return confirm('Delete this Policy or Rule?')">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-red-500">
@@ -112,15 +114,16 @@
                 </button>
             </div>
 
-            <form id="policy-demo-form" class="mt-5 space-y-4">
+            <form action="{{ route('admin.policy.store') }}" method="POST" class="mt-5 space-y-4">
+                @csrf
                 <div>
                     <label for="policy-title" class="mb-1 block text-sm font-medium text-slate-700">Policy Title</label>
-                    <input id="policy-title" type="text" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="e.g. Academic Leave of Absence Policy">
+                    <input id="policy-title" name="title" type="text" value="{{ old('title') }}" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="e.g. Academic Leave of Absence Policy">
                 </div>
 
                 <div>
                     <label for="policy-category" class="mb-1 block text-sm font-medium text-slate-700">Category</label>
-                    <select id="policy-category" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none">
+                    <select id="policy-category" name="category" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none">
                         <option value="academic">Academic</option>
                         <option value="attendance">Attendance</option>
                         <option value="financial">Financial</option>
@@ -130,11 +133,11 @@
 
                 <div>
                     <label for="policy-content" class="mb-1 block text-sm font-medium text-slate-700">Content</label>
-                    <textarea id="policy-content" rows="6" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="Write the full policy content here..."></textarea>
+                    <textarea id="policy-content" name="content" rows="6" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="Write the full policy content here...">{{ old('content') }}</textarea>
                 </div>
 
                 <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-                    <input id="policy-is-active" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400">
+                    <input id="policy-is-active" name="is_active" value="1" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400">
                     Active policy
                 </label>
 
@@ -206,15 +209,17 @@
                 </button>
             </div>
 
-            <form id="policy-edit-form" class="mt-5 space-y-4">
+            <form id="policy-edit-form" action="#" method="POST" class="mt-5 space-y-4">
+                @csrf
+                @method('PUT')
                 <div>
                     <label for="policy-edit-title" class="mb-1 block text-sm font-medium text-slate-700">Policy Title</label>
-                    <input id="policy-edit-title" type="text" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none">
+                    <input id="policy-edit-title" name="title" type="text" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none">
                 </div>
 
                 <div>
                     <label for="policy-edit-category" class="mb-1 block text-sm font-medium text-slate-700">Category</label>
-                    <select id="policy-edit-category" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none">
+                    <select id="policy-edit-category" name="category" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none">
                         <option value="academic">Academic</option>
                         <option value="attendance">Attendance</option>
                         <option value="financial">Financial</option>
@@ -223,12 +228,12 @@
                 </div>
 
                 <div>
-                    <label for="policy-edit-summary" class="mb-1 block text-sm font-medium text-slate-700">Summary</label>
-                    <textarea id="policy-edit-summary" rows="5" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none"></textarea>
+                    <label for="policy-edit-content" class="mb-1 block text-sm font-medium text-slate-700">Content</label>
+                    <textarea id="policy-edit-content" name="content" rows="5" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none"></textarea>
                 </div>
 
                 <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-                    <input id="policy-edit-status" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400">
+                    <input id="policy-edit-status" name="is_active" value="1" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400">
                     Active policy
                 </label>
 
@@ -286,25 +291,13 @@
 
         document.querySelectorAll('.js-policy-edit').forEach(function (button) {
             button.addEventListener('click', function () {
+                document.getElementById('policy-edit-form').action = this.dataset.updateUrl || '#';
                 document.getElementById('policy-edit-title').value = this.dataset.title || '';
                 document.getElementById('policy-edit-category').value = this.dataset.category || 'academic';
-                document.getElementById('policy-edit-summary').value = this.dataset.summary || '';
+                document.getElementById('policy-edit-content').value = this.dataset.content || '';
                 document.getElementById('policy-edit-status').checked = this.dataset.status === '1';
                 openPolicyModal('policy-edit-modal');
             });
-        });
-
-        document.getElementById('policy-demo-form')?.addEventListener('submit', function (event) {
-            event.preventDefault();
-            alert('UI demo only. No backend action is connected yet.');
-            closePolicyModal('policy-modal');
-            this.reset();
-        });
-
-        document.getElementById('policy-edit-form')?.addEventListener('submit', function (event) {
-            event.preventDefault();
-            alert('UI demo only. Update backend action is not connected yet.');
-            closePolicyModal('policy-edit-modal');
         });
     </script>
 @endpush

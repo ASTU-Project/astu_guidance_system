@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
 use App\Models\EventBase;
 use Illuminate\Http\Request;
 
@@ -15,8 +16,11 @@ class CalendarController extends Controller
             ->orderBy('semester')
             ->orderBy('section')
             ->get();
+        $departments = Department::query()
+            ->orderBy('name')
+            ->get();
 
-        return view('admin.calendar.index', compact('bases'));
+        return view('admin.calendar.index', compact('bases', 'departments'));
     }
 
     public function store(Request $request){

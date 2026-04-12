@@ -103,14 +103,14 @@
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-700">Field</label>
-                        <input
-                            name="department"
-                            type="text"
-                            placeholder="e.g. Computer Science"
-                            value="{{ old('department') }}"
-                            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-400"
-                            required
-                        >
+                        <select name="department" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-400" required>
+                            <option value="">Select field</option>
+                            @forelse($departments as $department)
+                                <option value="{{ $department->name }}" @selected(old('department') === $department->name)>{{ $department->name }}</option>
+                            @empty
+                                <option value="" disabled>No departments available</option>
+                            @endforelse
+                        </select>
                     </div>
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-700">Semester</label>

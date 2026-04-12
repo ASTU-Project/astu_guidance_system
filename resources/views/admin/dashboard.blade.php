@@ -50,6 +50,32 @@
 
             <div class="space-y-4">
                 <div class="rounded-md bg-white border border-slate-200 p-6 shadow-sm">
+                    <h3 class="text-lg font-semibold text-slate-950">Top departments</h3>
+                    <div class="mt-4 space-y-3">
+                        @forelse ($top_departments as $index => $department)
+                            @php
+                                $badgeClasses = [
+                                    'bg-emerald-100 text-emerald-700',
+                                    'bg-cyan-100 text-cyan-700',
+                                    'bg-sky-100 text-sky-700',
+                                ];
+                            @endphp
+                            <div class="flex items-center justify-between gap-3 rounded-md bg-slate-50 p-4">
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-900">{{ $department->department }}</p>
+                                    <p class="text-xs text-slate-500">{{ number_format($department->total_students) }} students</p>
+                                </div>
+                                <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $badgeClasses[$index] ?? 'bg-slate-200 text-slate-700' }}">{{ $department->percentage }}%</span>
+                            </div>
+                        @empty
+                            <div class="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+                                No department data available yet.
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+                
+                <div class="rounded-md bg-white border border-slate-200 p-6 shadow-sm">
                     <div class="flex items-center justify-between">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-950">Recent messages</h3>
@@ -75,31 +101,6 @@
                     </div>
                 </div>
 
-                <div class="rounded-md bg-white border border-slate-200 p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold text-slate-950">Top departments</h3>
-                    <div class="mt-4 space-y-3">
-                        @forelse ($top_departments as $index => $department)
-                            @php
-                                $badgeClasses = [
-                                    'bg-emerald-100 text-emerald-700',
-                                    'bg-cyan-100 text-cyan-700',
-                                    'bg-sky-100 text-sky-700',
-                                ];
-                            @endphp
-                            <div class="flex items-center justify-between gap-3 rounded-md bg-slate-50 p-4">
-                                <div>
-                                    <p class="text-sm font-semibold text-slate-900">{{ $department->department }}</p>
-                                    <p class="text-xs text-slate-500">{{ number_format($department->total_students) }} students</p>
-                                </div>
-                                <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $badgeClasses[$index] ?? 'bg-slate-200 text-slate-700' }}">{{ $department->percentage }}%</span>
-                            </div>
-                        @empty
-                            <div class="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
-                                No department data available yet.
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
             </div>
         </div>
     </div>

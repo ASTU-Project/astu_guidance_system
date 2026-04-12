@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CalendarEventController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\MapLocationController;
+use App\Http\Controllers\Admin\PolicyRuleController;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,7 @@ Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('/admin', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
     Route::prefix('admin')
@@ -40,37 +42,10 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/admin/map/{location}', [MapLocationController::class, 'destroy'])->name('admin.map.destroy');
     Route::put('/admin/map/{location}', [MapLocationController::class, 'update'])->name('admin.map.update');
 
-    Route::get('/admin/policy', function () {
-        $policies = collect([
-            [
-                'title' => 'Academic Leave of Absence Policy',
-                'category' => 'academic',
-                'is_active' => true,
-                'created_at' => now()->subDays(14),
-                'summary' => 'Guidelines and eligibility requirements for requesting temporary academic leave.',
-            ],
-            [
-                'title' => 'Class Attendance Policy',
-                'category' => 'attendance',
-                'is_active' => true,
-                'created_at' => now()->subDays(7),
-                'summary' => 'Attendance expectations, excused absences, and consequences for repeated misses.',
-            ],
-            [
-                'title' => 'Tuition Refund Policy',
-                'category' => 'financial',
-                'is_active' => false,
-                'created_at' => now()->subDays(3),
-                'summary' => 'Refund percentages and deadlines tied to withdrawal timelines.',
-            ],
-        ]);
-
-        return view('admin.policy', compact('policies'));
-    })->name('admin.policy');
-
-    Route::get('/admin/blog', function () {
-        return view('admin.blog');
-    })->name('admin.blog');
+    Route::get('/admin/policy', [PolicyRuleController::class, 'index'])->name('admin.policy');
+    Route::post('/admin/policy', [PolicyRuleController::class, 'store'])->name('admin.policy.store');
+    Route::put('/admin/policy/{policy}', [PolicyRuleController::class, 'update'])->name('admin.policy.update');
+    Route::delete('/admin/policy/{policy}', [PolicyRuleController::class, 'destroy'])->name('admin.policy.destroy');
 
     Route::get('/admin/departments', [DepartmentController::class, 'index'])->name('admin.departments');
     Route::post('/admin/departments', [DepartmentController::class, 'store'])->name('admin.departments.store');

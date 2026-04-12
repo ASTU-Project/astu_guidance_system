@@ -25,7 +25,7 @@
         <div class="rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h3 class="text-lg font-semibold text-slate-950">Map Management </h3>
+                    <h3 class="text-lg font-semibold text-slate-950">Map Management ({{ $locations->count() }})</h3>
                 </div>
                 <div class="flex items-center gap-2">
                     <button

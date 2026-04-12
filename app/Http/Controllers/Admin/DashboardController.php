@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Event;
-use App\Models\Grade;
+use App\Models\EventBase;
 use App\Models\Student;
 
 class DashboardController extends Controller
@@ -13,7 +13,7 @@ class DashboardController extends Controller
     public function index(){
         $number_of_students = Student::count();
         $number_of_departments = Department::count();
-        $number_of_events = Event::count();
+        $number_of_events = EventBase::count();
 
         $top_departments = Student::query()
             ->selectRaw('department, COUNT(*) as total_students')
@@ -29,20 +29,22 @@ class DashboardController extends Controller
                 return $department;
             });
 
-        $performance_chart = Grade::query()
-            ->selectRaw('year, AVG(score) as avg_score')
-            ->groupBy('year')
-            ->orderByDesc('year')
-            ->limit(6)
+        $currentYear = now()->year;
+
+        $performance_chart = Student::query()
+            ->selectRaw('current_year as year, AVG(cgpa) as avg_gpa')
+            ->whereNotNull('cgpa')
+            ->where('current_year', '<', $currentYear)
+            ->groupBy('current_year')
+            ->orderByDesc('current_year')
+            ->limit(5)
             ->get()
             ->sortBy('year')
             ->values()
             ->map(function ($row) {
-                $gpa = ((float) $row->avg_score) / 25;
-
                 return [
                     'year' => (int) $row->year,
-                    'gpa' => round(max(0, min(4, $gpa)), 2),
+                    'gpa' => round(max(0, min(4, (float) $row->avg_gpa)), 2),
                 ];
             });
        
