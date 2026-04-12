@@ -132,6 +132,17 @@
                     <h1 class="text-sm font-semibold text-slate-800">@yield('page-title', 'Dashboard')</h1>
                 </div>
                 <div class="flex items-center gap-3">
+                    @if(request()->routeIs('admin.automate'))
+                        <button
+                            type="button"
+                            onclick="if (typeof openToolsModal === 'function') openToolsModal();"
+                            class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                            title="Tools Settings"
+                            aria-label="Tools Settings"
+                        >
+                            <i class="fa fa-gear text-xs"></i>
+                        </button>
+                    @endif
                     <span class="text-xs text-slate-500 hidden sm:block gap-4 flex items-center">
                         <span class="text-slate-700 font-medium">
                             @php
