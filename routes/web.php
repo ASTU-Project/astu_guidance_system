@@ -41,7 +41,31 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/admin/map/{location}', [MapLocationController::class, 'update'])->name('admin.map.update');
 
     Route::get('/admin/policy', function () {
-        return view('admin.policy');
+        $policies = collect([
+            [
+                'title' => 'Academic Leave of Absence Policy',
+                'category' => 'academic',
+                'is_active' => true,
+                'created_at' => now()->subDays(14),
+                'summary' => 'Guidelines and eligibility requirements for requesting temporary academic leave.',
+            ],
+            [
+                'title' => 'Class Attendance Policy',
+                'category' => 'attendance',
+                'is_active' => true,
+                'created_at' => now()->subDays(7),
+                'summary' => 'Attendance expectations, excused absences, and consequences for repeated misses.',
+            ],
+            [
+                'title' => 'Tuition Refund Policy',
+                'category' => 'financial',
+                'is_active' => false,
+                'created_at' => now()->subDays(3),
+                'summary' => 'Refund percentages and deadlines tied to withdrawal timelines.',
+            ],
+        ]);
+
+        return view('admin.policy', compact('policies'));
     })->name('admin.policy');
 
     Route::get('/admin/blog', function () {

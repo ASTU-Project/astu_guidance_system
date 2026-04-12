@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Event;
+use App\Models\Grade;
 use App\Models\Student;
-use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -28,12 +28,30 @@ class DashboardController extends Controller
 
                 return $department;
             });
+
+        $performance_chart = Grade::query()
+            ->selectRaw('year, AVG(score) as avg_score')
+            ->groupBy('year')
+            ->orderByDesc('year')
+            ->limit(6)
+            ->get()
+            ->sortBy('year')
+            ->values()
+            ->map(function ($row) {
+                $gpa = ((float) $row->avg_score) / 25;
+
+                return [
+                    'year' => (int) $row->year,
+                    'gpa' => round(max(0, min(4, $gpa)), 2),
+                ];
+            });
        
         return view('admin.dashboard', [
             'number_of_students' => $number_of_students,
             'number_of_departments' => $number_of_departments,
             'number_of_events' => $number_of_events,
             'top_departments' => $top_departments,
+            'performance_chart' => $performance_chart,
         ]);
     }
 }
