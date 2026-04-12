@@ -101,13 +101,13 @@
                     <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
                     <span>Policy</span>
                 </a>
-                <a href="{{ route('admin.message') }}" class="nav-item {{ request()->routeIs('admin.message') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
-                    <span>Message</span>
-                </a>
                 <a href="{{ route('admin.automate') }}" class="nav-item {{ request()->routeIs('admin.automate') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
                     <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
                     <span>Automate</span>
+                </a>
+                <a href="{{ route('admin.profile.edit') }}" class="nav-item {{ request()->routeIs('admin.profile.*') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-user w-4 text-center text-xs"></i>
+                    <span>Profile</span>
                 </a>
                 
             </nav>
@@ -138,7 +138,9 @@
                                 $name = auth()->user()->name ?? 'Guest';
                                 $name = explode(' ', $name)[0];
                             @endphp
-                            {{ $name }}
+                            <a href="{{ route('admin.profile.edit') }}" class="bg-slate-900 font-bold p-2 px-3 rounded-full text-white">
+                                {{ $name[0] }}
+                            </a>
                         </span>
                     </span>
                     <span class="text-xs text-slate-400">

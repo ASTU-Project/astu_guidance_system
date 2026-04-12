@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\MapLocationController;
 use App\Http\Controllers\Admin\PolicyRuleController;
+use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
@@ -50,9 +51,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/departments', [DepartmentController::class, 'index'])->name('admin.departments');
     Route::post('/admin/departments', [DepartmentController::class, 'store'])->name('admin.departments.store');
 
-    Route::get('/admin/message', function () {
-        return view('admin.message');
-    })->name('admin.message');
+    Route::get('/admin/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
+    Route::put('/admin/profile', [ProfileController::class, 'updateProfile'])->name('admin.profile.update');
+    Route::put('/admin/profile/password', [ProfileController::class, 'updatePassword'])->name('admin.profile.password.update');
 
     Route::get('/admin/automate', function () {
         return view('admin.automate');
