@@ -25,7 +25,7 @@
         <div class="rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h3 class="text-lg font-semibold text-slate-950">Calendars (10)</h3>
+                    <h3 class="text-lg font-semibold text-slate-950">Calendars ({{ $bases->count() }})</h3>
                 </div>
                 <div class="flex items-center gap-2">
                     <button
@@ -53,13 +53,13 @@
                     <tbody class="divide-y divide-slate-100">
                         @forelse($bases as $base)
                         <tr class="hover:bg-slate-50/50">
-                            <td class="px-5 py-4 text-sm text-slate-600">{{$base->id}}</td>
+                            <td class="px-5 py-4 text-sm text-slate-600">{{$base->event_id}}</td>
                             <td class="px-5 py-4 text-sm text-slate-600">{{$base->department}}</td>
                             <td class="px-5 py-4 text-sm text-slate-600">{{$base->semester}}</td>
                             <td class="px-5 py-4 text-sm text-slate-600">{{$base->section}}</td>
                             <td class="px-5 py-4 text-sm text-slate-600">
                                 <div class="flex items-center gap-3">
-                                    <a href="{{route('admin.calendar.edit', $base->event_id)}}" class="hover:opacity-80" title="Edit">
+                                    <a href="{{route('admin.calendar.events', $base->event_id)}}" class="hover:opacity-80" title="Edit">
                                         <i class="fa fa-edit text-green-500"></i>
                                     </a>
                                     <a href="#" class="hover:opacity-80" title="Delete">
@@ -98,37 +98,38 @@
                 </button>
             </div>
 
-            <form class="space-y-4 px-5 py-5">
+            <form method="POST" action="{{ route('admin.calendar.store') }}" class="space-y-4 px-5 py-5">
+                @csrf
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-700">Field</label>
                         <input
+                            name="department"
                             type="text"
                             placeholder="e.g. Computer Science"
+                            value="{{ old('department') }}"
                             class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-400"
+                            required
                         >
                     </div>
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-700">Semester</label>
-                        <select class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-400">
+                        <select name="semester" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-400" required>
                             <option value="">Select semester</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
+                            <option value="1" @selected(old('semester') == '1')>1</option>
+                            <option value="2" @selected(old('semester') == '2')>2</option>
                         </select>
                     </div>
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-slate-700">Section</label>
-                        <select class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-400">
+                        <select name="section" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus:border-slate-400" required>
                             <option value="">Select section</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
+                            <option value="1" @selected(old('section') == '1')>1</option>
+                            <option value="2" @selected(old('section') == '2')>2</option>
+                            <option value="3" @selected(old('section') == '3')>3</option>
                         </select>
                     </div>
+                    
                 </div>
                 <div class="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
                     <button
@@ -139,7 +140,7 @@
                         Cancel
                     </button>
                     <button
-                        type="button"
+                        type="submit"
                         class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
                     >
                         Save Calendar
@@ -156,6 +157,12 @@
 
 @push('scripts')
     <script>
+        @if($errors->any())
+            window.addEventListener('DOMContentLoaded', () => {
+                openCalendarModal();
+            });
+        @endif
+
         function openCalendarModal() {
             const modal = document.getElementById('calendar-modal');
             modal.classList.remove('hidden');

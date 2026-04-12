@@ -15,6 +15,7 @@ class Event extends Model
     protected $fillable = [
         'event_id',
         'task',
+        'event_date',
         'day',
         'start_hour',
         'start_min',
@@ -28,6 +29,7 @@ class Event extends Model
     ];
 
     protected $casts = [
+        'event_date' => 'date',
         'start_hour' => 'integer',
         'start_min' => 'integer',
         'end_hour' => 'integer',

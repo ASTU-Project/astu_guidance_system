@@ -25,7 +25,7 @@ class DepartmentController extends Controller
         return view('admin.departments', compact('departments'));
     }
 
-    public function add(Request $request){
+    public function store(Request $request){
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:20', 'unique:departments,code'],

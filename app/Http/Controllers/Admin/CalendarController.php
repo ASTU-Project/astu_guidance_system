@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-// use App\Models\Event;
 use App\Models\EventBase;
+use Illuminate\Http\Request;
 
 class CalendarController extends Controller
 {
@@ -19,9 +19,21 @@ class CalendarController extends Controller
         return view('admin.calendar.index', compact('bases'));
     }
 
-    public function edit($id)
-    {
-        $base = EventBase::findOrFail($id);
-        return view('admin.calendar.edit', compact('base'));
+    public function store(Request $request){
+        $validated = $request->validate([
+            'department' => ['required', 'string', 'max:255', ],
+            'semester' => ['required', 'string','min:1', 'max:2'],
+            'section' => ['required', 'integer', 'min:1'],
+        ]);
+
+        EventBase::create([
+            'department' => $validated['department'],
+            'semester' => $validated['semester'],
+            'section' => $validated['section'],
+        ]);
+
+        return redirect()
+            ->route('admin.calendar.index')
+            ->with('success', 'Event base created successfully.');
     }
 }
