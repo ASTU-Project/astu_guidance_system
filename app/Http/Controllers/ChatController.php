@@ -6,10 +6,12 @@ use App\Mcp\Tools\DepartmentList;
 use App\Mcp\Tools\StudentList;
 use App\Models\AutomationSetting;
 use App\Models\ChatMessage;
+use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -27,9 +29,13 @@ class ChatController extends Controller
     private const TOP_P = 1;
     private const RATE_LIMIT_RETRIES = 2;
     private const RATE_LIMIT_BACKOFF_MS = 2000;
-    private const MAX_TOOL_ROUNDS = 4;
+    private const RATE_LIMIT_MAX_WAIT_MS = 2500;
+    private const MAX_TOOL_ROUNDS = 2;
     private const HISTORY_LIMIT = 3;
     private const HISTORY_MESSAGE_CHAR_LIMIT = 700;
+    private const TOOL_RESULT_CHAR_BUDGET = 20000;
+    private const TOOL_LIST_HARD_LIMIT = 25;
+    private const IN_FLIGHT_LOCK_SECONDS = 10;
 
     public function __invoke(Request $request): JsonResponse
     {
@@ -50,13 +56,52 @@ class ChatController extends Controller
         $user = $request->user();
         $message = trim($validated['message']);
         $sessionId = $validated['session_id'] ?? (string) Str::uuid();
-        $systemInstruction = $this->buildSystemInstruction($user);
+
+        $lockKey = $this->buildInFlightLockKey($user, $sessionId, $request->ip() ?? 'unknown');
+        if (! Cache::add($lockKey, 1, now()->addSeconds(self::IN_FLIGHT_LOCK_SECONDS))) {
+            return response()->json([
+                'error' => 'A previous chat request is still processing. Please wait a moment and try again.',
+                'session_id' => $sessionId,
+            ], 429);
+        }
+
+        $automationSettings = $this->getAutomationSettings($user);
+        $systemInstruction = $this->buildSystemInstruction($user, $automationSettings);
         $conversationMessages = $this->buildConversationMessages($user, $sessionId, $message, $systemInstruction);
-        $enabledToolGroups = $this->getEnabledToolGroups($user);
-        $tools = $this->buildToolDefinitions($enabledToolGroups);
+        $enabledToolGroups = $this->getEnabledToolGroupsFromSettings($automationSettings);
+        $enabledToolGroups = $this->applyDefaultReadToolGroups($enabledToolGroups);
+        $tools = $this->buildToolDefinitions($enabledToolGroups, $user);
         $toolingMessages = $conversationMessages;
 
         try {
+            $fastPath = $this->tryHandleGroundedReadFastPath($message, $enabledToolGroups, $user);
+            if ($fastPath !== null) {
+                $assistantText = $fastPath;
+                $assistantHtml = $this->renderAssistantHtml($assistantText);
+
+                if ($user !== null && Schema::hasTable('chat_messages')) {
+                    ChatMessage::create([
+                        'user_id' => $user->id,
+                        'session_id' => $sessionId,
+                        'role' => 'user',
+                        'content' => $message,
+                    ]);
+
+                    ChatMessage::create([
+                        'user_id' => $user->id,
+                        'session_id' => $sessionId,
+                        'role' => 'assistant',
+                        'content' => $assistantText,
+                    ]);
+                }
+
+                return response()->json([
+                    'message' => $assistantText,
+                    'message_html' => $assistantHtml,
+                    'session_id' => $sessionId,
+                ]);
+            }
+
             $assistantMessagePayload = null;
             $finalAssistantMessage = '';
             $toolRounds = 0;
@@ -72,7 +117,7 @@ class ChatController extends Controller
 
                 if ($tools !== []) {
                     $payload['tools'] = $tools;
-                    $payload['tool_choice'] = 'auto';
+                    $payload['tool_choice'] = $this->decideToolChoice($message, $enabledToolGroups, $tools, $user) ?? 'auto';
                 }
 
                 $response = $this->postCompletionWithBackoff($apiKey, $payload);
@@ -174,7 +219,16 @@ class ChatController extends Controller
             return response()->json([
                 'error' => 'Unable to complete chat request.',
             ], 500);
+        } finally {
+            Cache::forget($lockKey);
         }
+    }
+
+    private function buildInFlightLockKey(mixed $user, string $sessionId, string $ip): string
+    {
+        $userPart = ($user !== null && isset($user->id)) ? ('u:'.$user->id) : ('ip:'.$ip);
+
+        return 'chat:in_flight:'.$userPart.':'.$sessionId;
     }
 
     private function normalizeAssistantContent(mixed $content): string
@@ -238,6 +292,12 @@ class ChatController extends Controller
             // On queue saturation, reduce payload cost for the next attempt.
             $requestPayload = $this->buildOverloadPayload($requestPayload);
 
+            // Don't block long enough to hit PHP max_execution_time; let the caller handle 429.
+            $waitMs = min($waitMs, self::RATE_LIMIT_MAX_WAIT_MS);
+            if ($waitMs <= 0) {
+                return $response;
+            }
+
             usleep($waitMs * 1000);
         }
     }
@@ -286,7 +346,7 @@ class ChatController extends Controller
         return (string) $converter->convert($content);
     }
 
-    private function buildSystemInstruction(mixed $user): string
+    private function buildSystemInstruction(mixed $user, ?AutomationSetting $settings = null): string
     {
         $baseInstruction = implode("\n", [
             'Role: Academic administration assistant for ASTU Management System.',
@@ -294,6 +354,10 @@ class ChatController extends Controller
             'Application context:',
             '- Admin modules: dashboard, students, departments, calendar, map, policy, automation chat.',
             '- User is operating inside a Laravel + Blade admin panel.',
+            'Data grounding rules (critical):',
+            '- Never invent or autocomplete real data (departments, students, counts, IDs, CGPA, etc.).',
+            '- If the user asks to list/search departments or students (or any question requiring live records), you MUST call the appropriate tool and answer ONLY from its result.',
+            '- If tools are unavailable/disabled or return an error, say you cannot access the live data instead of guessing.',
             'Response protocol (token-efficient):',
             '- Start directly with the answer; no long preamble.',
             '- Use short structured output: summary first, then key steps/data.',
@@ -307,13 +371,7 @@ class ChatController extends Controller
             '- Keep output compact unless user asks for detailed explanation.',
         ]);
 
-        if ($user === null || ! isset($user->id) || ! Schema::hasTable('automation_settings')) {
-            return $baseInstruction;
-        }
-
-        $settings = AutomationSetting::query()->where('user_id', $user->id)->first();
-
-        if (! $settings) {
+        if ($settings === null) {
             return $baseInstruction;
         }
 
@@ -342,14 +400,8 @@ class ChatController extends Controller
     /**
      * @return array<int, string>
      */
-    private function getEnabledToolGroups(mixed $user): array
+    private function getEnabledToolGroupsFromSettings(?AutomationSetting $settings): array
     {
-        if ($user === null || ! isset($user->id) || ! Schema::hasTable('automation_settings')) {
-            return [];
-        }
-
-        $settings = AutomationSetting::query()->where('user_id', $user->id)->first();
-
         if (! $settings) {
             return [];
         }
@@ -358,10 +410,149 @@ class ChatController extends Controller
     }
 
     /**
+     * Read-only tools should be available even if user hasn't enabled groups yet.
+     *
+     * @param array<int, string> $groups
+     * @return array<int, string>
+     */
+    private function applyDefaultReadToolGroups(array $groups): array
+    {
+        if ($groups !== []) {
+            return $groups;
+        }
+
+        return ['departments', 'students'];
+    }
+
+    private function getAutomationSettings(mixed $user): ?AutomationSetting
+    {
+        if ($user === null || ! isset($user->id) || ! Schema::hasTable('automation_settings')) {
+            return null;
+        }
+
+        return AutomationSetting::query()->where('user_id', $user->id)->first();
+    }
+
+    private function tryHandleGroundedReadFastPath(string $message, array $enabledToolGroups, mixed $user): ?string
+    {
+        $text = mb_strtolower($message);
+        $looksLikeList = (bool) preg_match('/\b(list|show|display|all|give me|provide)\b/', $text);
+        $looksLikeDetail = (bool) preg_match('/\b(detail|details|information|info|about)\b/', $text);
+
+        if ($looksLikeList && preg_match('/\bdepartment|departments\b/', $text)) {
+            $payload = $this->runMcpTool(new DepartmentList(), $enabledToolGroups, 'departments', $user, [
+                'limit' => self::TOOL_LIST_HARD_LIMIT,
+            ]);
+
+            if (isset($payload['error'])) {
+                return null;
+            }
+
+            $departments = is_array($payload['departments'] ?? null) ? $payload['departments'] : [];
+            if ($departments === []) {
+                return "No departments found.";
+            }
+
+            $lines = ["## Departments",];
+            foreach ($departments as $dept) {
+                if (is_array($dept) && isset($dept['name'])) {
+                    $lines[] = '- '.(string) $dept['name'];
+                }
+            }
+
+            return implode("\n", $lines);
+        }
+
+        if ($looksLikeDetail && preg_match('/\bdepartment|departments\b/', $text)) {
+            // If the user didn't specify which department, provide the real list and ask them to choose.
+            $payload = $this->runMcpTool(new DepartmentList(), $enabledToolGroups, 'departments', $user, [
+                'limit' => self::TOOL_LIST_HARD_LIMIT,
+            ]);
+
+            if (isset($payload['error'])) {
+                return null;
+            }
+
+            $departments = is_array($payload['departments'] ?? null) ? $payload['departments'] : [];
+            if ($departments === []) {
+                return "No departments found.";
+            }
+
+            // Try best-effort match: if message contains a department name/code substring, filter via tool search.
+            // Otherwise, ask user to pick.
+            $q = trim(preg_replace('/\b(give me|show|provide|department|departments|detail|details|information|info|about|please)\b/i', '', $message) ?? '');
+            $q = trim($q);
+
+            if ($q !== '') {
+                $searchPayload = $this->runMcpTool(new DepartmentList(), $enabledToolGroups, 'departments', $user, [
+                    'q' => $q,
+                    'limit' => 5,
+                ]);
+
+                if (! isset($searchPayload['error'])) {
+                    $matches = is_array($searchPayload['departments'] ?? null) ? $searchPayload['departments'] : [];
+                    if (count($matches) === 1 && is_array($matches[0])) {
+                        $dept = $matches[0];
+                        $lines = ["## Department details"];
+                        $lines[] = '- **Name**: '.(string) ($dept['name'] ?? '—');
+                        $lines[] = '- **Code**: '.(string) ($dept['code'] ?? '—');
+                        $lines[] = '- **Min GPA**: '.(string) ($dept['min_gpa'] ?? '—');
+                        $lines[] = '- **Spot limit**: '.(string) ($dept['spot_limit'] ?? '—');
+                        $lines[] = '';
+                        $lines[] = 'If you meant a different department, tell me the name/code.';
+
+                        return implode("\n", $lines);
+                    }
+                }
+            }
+
+            $lines = ["Which department do you want details for? Here are the current departments:"];
+            foreach ($departments as $dept) {
+                if (is_array($dept) && isset($dept['name'], $dept['code'])) {
+                    $lines[] = '- '.(string) $dept['name'].' ('.(string) $dept['code'].')';
+                } elseif (is_array($dept) && isset($dept['name'])) {
+                    $lines[] = '- '.(string) $dept['name'];
+                }
+            }
+
+            return implode("\n", $lines);
+        }
+
+        if ($looksLikeList && preg_match('/\bstudent|students\b/', $text)) {
+            $payload = $this->runMcpTool(new StudentList(), $enabledToolGroups, 'students', $user, [
+                'limit' => min(10, self::TOOL_LIST_HARD_LIMIT),
+            ]);
+
+            if (isset($payload['error'])) {
+                return null;
+            }
+
+            $students = is_array($payload['students'] ?? null) ? $payload['students'] : [];
+            if ($students === []) {
+                return "No students found.";
+            }
+
+            $lines = ["## Students (sample)"];
+            foreach ($students as $student) {
+                if (is_array($student) && isset($student['name'], $student['student_id'])) {
+                    $lines[] = '- '.(string) $student['name'].' ('.(string) $student['student_id'].')';
+                }
+            }
+
+            $lines[] = '';
+            $lines[] = 'Tip: ask like "search student Bilal" to narrow it down.';
+
+            return implode("\n", $lines);
+        }
+
+        return null;
+    }
+
+    /**
      * @param array<int, string> $enabledToolGroups
      * @return array<int, array<string, mixed>>
      */
-    private function buildToolDefinitions(array $enabledToolGroups): array
+    private function buildToolDefinitions(array $enabledToolGroups, mixed $user): array
     {
         $tools = [];
 
@@ -370,30 +561,74 @@ class ChatController extends Controller
                 'type' => 'function',
                 'function' => [
                     'name' => 'department_list',
-                    'description' => 'List all departments with id, name, code, min_gpa, and spot_limit.',
+                    'description' => 'Fetch REAL departments from the database. Use this whenever listing/searching departments. Never guess department names.',
                     'parameters' => [
                         'type' => 'object',
-                        'properties' => [],
+                        'properties' => [
+                            'q' => ['type' => 'string', 'description' => 'Search by department name or code.'],
+                            'limit' => ['type' => 'integer', 'description' => 'Max rows to return (1-25).'],
+                            'cursor_id' => ['type' => 'integer', 'description' => 'Pagination cursor; returns rows with id > cursor_id.'],
+                        ],
+                        'additionalProperties' => false,
                     ],
                 ],
             ];
         }
 
-        if (in_array('students', $enabledToolGroups, true)) {
+        if (in_array('students', $enabledToolGroups, true) && $this->isAdminUser($user)) {
             $tools[] = [
                 'type' => 'function',
                 'function' => [
                     'name' => 'student_list',
-                    'description' => 'List students with name, student_id, phone, email, department, current_semester_current_section, and cgpa.',
+                    'description' => 'Fetch REAL students from the database. Use this whenever listing/searching students. Never guess student data.',
                     'parameters' => [
                         'type' => 'object',
-                        'properties' => [],
+                        'properties' => [
+                            'q' => ['type' => 'string', 'description' => 'Search by name or student_id.'],
+                            'department' => ['type' => 'string', 'description' => 'Filter by department.'],
+                            'min_cgpa' => ['type' => 'number', 'description' => 'Minimum CGPA filter.'],
+                            'limit' => ['type' => 'integer', 'description' => 'Max rows to return (1-25).'],
+                            'cursor_id' => ['type' => 'integer', 'description' => 'Pagination cursor; returns rows with id > cursor_id.'],
+                        ],
+                        'additionalProperties' => false,
                     ],
                 ],
             ];
         }
 
         return $tools;
+    }
+
+    /**
+     * Best-effort forcing of tool call for grounded "list/search" requests.
+     *
+     * @param array<int, array<string, mixed>> $tools
+     * @return array<string, mixed>|string|null
+     */
+    private function decideToolChoice(string $message, array $enabledToolGroups, array $tools, mixed $user): array|string|null
+    {
+        if ($tools === []) {
+            return null;
+        }
+
+        $text = mb_strtolower($message);
+        $looksLikeList = (bool) preg_match('/\b(list|show|display|all|give me|provide)\b/', $text);
+
+        if ($looksLikeList && in_array('departments', $enabledToolGroups, true) && preg_match('/\bdepartment|departments\b/', $text)) {
+            return [
+                'type' => 'function',
+                'function' => ['name' => 'department_list'],
+            ];
+        }
+
+        if ($looksLikeList && in_array('students', $enabledToolGroups, true) && $this->isAdminUser($user) && preg_match('/\bstudent|students\b/', $text)) {
+            return [
+                'type' => 'function',
+                'function' => ['name' => 'student_list'],
+            ];
+        }
+
+        return 'auto';
     }
 
     /**
@@ -419,11 +654,42 @@ class ChatController extends Controller
             ],
         };
 
+        $resultPayload = $this->compactToolResult($resultPayload);
+
         return [
             'role' => 'tool',
             'tool_call_id' => $callId,
             'content' => json_encode($resultPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{"error":"Tool result encoding failed."}',
         ];
+    }
+
+    /**
+     * Ensure tool results never explode prompt size.
+     *
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function compactToolResult(array $payload): array
+    {
+        if (isset($payload['students']) && is_array($payload['students'])) {
+            $payload['students'] = array_slice($payload['students'], 0, self::TOOL_LIST_HARD_LIMIT);
+            $payload['count'] = isset($payload['count']) ? (int) $payload['count'] : count($payload['students']);
+        }
+
+        if (isset($payload['departments']) && is_array($payload['departments'])) {
+            $payload['departments'] = array_slice($payload['departments'], 0, self::TOOL_LIST_HARD_LIMIT);
+            $payload['count'] = isset($payload['count']) ? (int) $payload['count'] : count($payload['departments']);
+        }
+
+        $encoded = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (is_string($encoded) && strlen($encoded) > self::TOOL_RESULT_CHAR_BUDGET) {
+            return [
+                'error' => 'Tool result too large; refine your query with q/limit/cursor filters.',
+                'hint' => 'Try q (search), department, min_cgpa, or pagination via cursor_id.',
+            ];
+        }
+
+        return $payload;
     }
 
     /**
@@ -452,18 +718,9 @@ class ChatController extends Controller
                 if (method_exists($mcpResponse, 'content')) {
                     $content = $mcpResponse->content();
 
-                    if (is_array($content)) {
-                        return $content;
-                    }
-
-                    if (is_string($content)) {
-                        $decoded = json_decode($content, true);
-
-                        if (is_array($decoded)) {
-                            return $decoded;
-                        }
-
-                        return ['result' => $content];
+                    $normalized = $this->normalizeMcpContent($content);
+                    if ($normalized !== null) {
+                        return $normalized;
                     }
                 }
             }
@@ -481,6 +738,68 @@ class ChatController extends Controller
         return [
             'error' => 'Tool returned no usable content.',
         ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function normalizeMcpContent(mixed $content): ?array
+    {
+        if (is_array($content)) {
+            return $content;
+        }
+
+        if (is_string($content)) {
+            $decoded = json_decode($content, true);
+
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+
+            return ['result' => $content];
+        }
+
+        if (is_object($content)) {
+            // Laravel MCP tools commonly return Text content objects where the useful
+            // payload is a JSON string in __toString() or in toArray()['text'].
+            if (method_exists($content, '__toString')) {
+                $asString = (string) $content;
+                if ($asString !== '') {
+                    $decodedString = json_decode($asString, true);
+                    if (is_array($decodedString)) {
+                        return $decodedString;
+                    }
+                }
+            }
+
+            if (method_exists($content, 'toArray')) {
+                $array = $content->toArray();
+                if (is_array($array)) {
+                    if (isset($array['text']) && is_string($array['text'])) {
+                        $decodedText = json_decode($array['text'], true);
+                        if (is_array($decodedText)) {
+                            return $decodedText;
+                        }
+                    }
+
+                    return $array;
+                }
+            }
+
+            if ($content instanceof \JsonSerializable) {
+                $serialized = $content->jsonSerialize();
+                if (is_array($serialized)) {
+                    return $serialized;
+                }
+            }
+
+            $decodedObject = json_decode(json_encode($content, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), true);
+            if (is_array($decodedObject)) {
+                return $decodedObject;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -522,5 +841,31 @@ class ChatController extends Controller
         ];
 
         return $messages;
+    }
+
+    private function isAdminUser(mixed $user): bool
+    {
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        if (method_exists($user, 'isAdmin')) {
+            return (bool) $user->isAdmin();
+        }
+
+        if (isset($user->is_admin)) {
+            return (bool) $user->is_admin;
+        }
+
+        if (isset($user->role)) {
+            return strtolower((string) $user->role) === 'admin';
+        }
+
+        if (isset($user->user_type)) {
+            return strtolower((string) $user->user_type) === 'admin';
+        }
+
+        // Fallback for projects without explicit role schema yet.
+        return (int) $user->id === 1;
     }
 }
