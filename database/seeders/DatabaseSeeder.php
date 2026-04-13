@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Department;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -30,5 +31,6 @@ class DatabaseSeeder extends Seeder
         User::query()->where('id', '!=', $testUser->id)->delete();
 
         Student::factory(50)->create();
+        Department::factory(8)->create();
     }
 }

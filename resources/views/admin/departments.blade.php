@@ -28,14 +28,14 @@
                     <h3 class="text-lg font-semibold text-slate-950">Departments ({{ number_format($departments->count()) }})</h3>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button
+                    {{-- <button
                         type="button"
                         onclick="document.getElementById('department-modal').classList.remove('hidden')"
                         class="inline-flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
                     >
                         <i class="fa fa-plus text-[11px]"></i>
                         Add Department
-                    </button>
+                    </button> --}}
                 </div>
             </div>
 
@@ -91,7 +91,7 @@
             </div>
         </div>
     </div>
-    <div id="department-modal" class="{{ $errors->any() || old('name') || old('code') ? '' : 'hidden' }} fixed inset-0 z-50 flex items-center justify-center px-4">
+    {{-- <div id="department-modal" class="{{ $errors->any() || old('name') || old('code') ? '' : 'hidden' }} fixed inset-0 z-50 flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-slate-950/50" onclick="document.getElementById('department-modal').classList.add('hidden')"></div>
         <div class="relative w-full max-w-lg rounded-md bg-white p-6 shadow-2xl">
             <div class="flex items-start justify-between gap-4">
@@ -136,7 +136,7 @@
                 </div>
             </form>
         </div>
-    </div>
+    </div> --}}
 @endsection
 
 @push('styles')
@@ -144,7 +144,7 @@
 @endpush
 
 @push('scripts')
-    <script>
+    {{-- <script>
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
                 const modal = document.getElementById('department-modal');
@@ -153,5 +153,5 @@
                 }
             }
         });
-    </script>
+    </script> --}}
 @endpush

@@ -31,7 +31,12 @@
                             <div class="flex items-end gap-3">
                                 <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
                                 <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-700">
-                                    Demo tools are ready. Open the tools popup to edit endpoint settings and permissions.
+                                    <small>
+                                        <b>Used Tools:</b>
+                                        <span class="bg-slate-900 text-white p-1 px-3 font-bold rounded-xl">DepartmentList</span> 
+                                        <span class="bg-slate-900 text-white p-1 px-3 font-bold rounded-xl">ListPoliciesTool</span>
+                                    </small>
+                                    <p  class="mt-2">Demo tools are ready. Open the tools popup to edit endpoint settings and permissions.</p>
                                     <div class="mt-2 text-[11px] text-slate-400">Today, 10:49 AM</div>
                                 </div>
                             </div>

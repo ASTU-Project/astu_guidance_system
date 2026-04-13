@@ -49,7 +49,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/admin/policy/{policy}', [PolicyRuleController::class, 'destroy'])->name('admin.policy.destroy');
 
     Route::get('/admin/departments', [DepartmentController::class, 'index'])->name('admin.departments');
-    Route::post('/admin/departments', [DepartmentController::class, 'store'])->name('admin.departments.store');
+    // Route::post('/admin/departments', [DepartmentController::class, 'store'])->name('admin.departments.store');
 
     Route::get('/admin/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
     Route::put('/admin/profile', [ProfileController::class, 'updateProfile'])->name('admin.profile.update');
