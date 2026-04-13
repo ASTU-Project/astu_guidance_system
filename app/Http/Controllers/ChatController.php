@@ -6,6 +6,7 @@ use App\Models\AutomationSetting;
 use App\Models\ChatMessage;
 use App\Models\Department;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -18,7 +19,14 @@ class ChatController extends Controller
 {
     private const DEFAULT_MODEL = 'qwen-3-235b-a22b-instruct-2507';
     private const API = 'https://api.cerebras.ai/v1/chat/completions';
-    private const HISTORY_LIMIT = 5;
+    private const MAX_COMPLETION_TOKENS = 768;
+    private const OVERLOAD_MAX_COMPLETION_TOKENS = 384;
+    private const TEMPERATURE = 0.2;
+    private const TOP_P = 1;
+    private const RATE_LIMIT_RETRIES = 2;
+    private const RATE_LIMIT_BACKOFF_MS = 2000;
+    private const HISTORY_LIMIT = 3;
+    private const HISTORY_MESSAGE_CHAR_LIMIT = 700;
     private const DEPARTMENT_CONTEXT_LIMIT = 30;
 
     public function __invoke(Request $request): JsonResponse
@@ -49,7 +57,9 @@ class ChatController extends Controller
             $phaseOnePayload = [
                 'model' => $model,
                 'messages' => $conversationMessages,
-                'max_completion_tokens' => 1200,
+                'max_completion_tokens' => self::MAX_COMPLETION_TOKENS,
+                'temperature' => self::TEMPERATURE,
+                'top_p' => self::TOP_P,
             ];
 
             if ($tools !== []) {
@@ -57,18 +67,7 @@ class ChatController extends Controller
                 $phaseOnePayload['tool_choice'] = 'auto';
             }
 
-            $phaseOneResponse = Http::withToken($apiKey)
-                ->withOptions([
-                    // These options reduce intermittent TLS/socket reset issues on some local stacks.
-                    'force_ip_resolve' => 'v4',
-                    'version' => 1.1,
-                ])
-                ->connectTimeout(8)
-                ->timeout(20)
-                ->retry(2, 400, function (\Exception $exception): bool {
-                    return $exception instanceof ConnectionException;
-                }, throw: false)
-                ->post(self::API, $phaseOnePayload);
+            $phaseOneResponse = $this->postCompletionWithBackoff($apiKey, $phaseOnePayload);
 
             if (! $phaseOneResponse->successful()) {
                 $status = $phaseOneResponse->status();
@@ -113,21 +112,13 @@ class ChatController extends Controller
                     $toolResults[] = $this->executeToolCall($call, $enabledToolGroups);
                 }
 
-                $phaseTwoResponse = Http::withToken($apiKey)
-                    ->withOptions([
-                        'force_ip_resolve' => 'v4',
-                        'version' => 1.1,
-                    ])
-                    ->connectTimeout(8)
-                    ->timeout(20)
-                    ->retry(2, 400, function (\Exception $exception): bool {
-                        return $exception instanceof ConnectionException;
-                    }, throw: false)
-                    ->post(self::API, [
-                        'model' => $model,
-                        'messages' => array_merge($conversationMessages, [$assistantMessagePayload], $toolResults),
-                        'max_completion_tokens' => 1200,
-                    ]);
+                $phaseTwoResponse = $this->postCompletionWithBackoff($apiKey, [
+                    'model' => $model,
+                    'messages' => array_merge($conversationMessages, [$assistantMessagePayload], $toolResults),
+                    'max_completion_tokens' => self::MAX_COMPLETION_TOKENS,
+                    'temperature' => self::TEMPERATURE,
+                    'top_p' => self::TOP_P,
+                ]);
 
                 if (! $phaseTwoResponse->successful()) {
                     $status = $phaseTwoResponse->status();
@@ -221,11 +212,82 @@ class ChatController extends Controller
         return 'No response content returned by model.';
     }
 
+    /**
+     * Retry once on provider 429 queue saturation with short backoff.
+     *
+     * @param array<string, mixed> $payload
+     */
+    private function postCompletionWithBackoff(string $apiKey, array $payload): Response
+    {
+        $attempt = 0;
+        $requestPayload = $payload;
+
+        while (true) {
+            $response = Http::withToken($apiKey)
+                ->withOptions([
+                    // These options reduce intermittent TLS/socket reset issues on some local stacks.
+                    'force_ip_resolve' => 'v4',
+                    'version' => 1.1,
+                ])
+                ->connectTimeout(8)
+                ->timeout(20)
+                ->retry(2, 400, function (\Exception $exception): bool {
+                    return $exception instanceof ConnectionException;
+                }, throw: false)
+                ->post(self::API, $requestPayload);
+
+            if ($response->status() !== 429 || $attempt >= self::RATE_LIMIT_RETRIES) {
+                return $response;
+            }
+
+            $attempt++;
+
+            // On queue saturation, reduce payload cost for the next attempt.
+            $requestPayload = $this->buildOverloadPayload($requestPayload);
+
+            usleep((self::RATE_LIMIT_BACKOFF_MS * $attempt) * 1000);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function buildOverloadPayload(array $payload): array
+    {
+        $payload['max_completion_tokens'] = min(
+            (int) ($payload['max_completion_tokens'] ?? self::MAX_COMPLETION_TOKENS),
+            self::OVERLOAD_MAX_COMPLETION_TOKENS
+        );
+
+        // Tool orchestration can require a second model pass. Disable tools under overload.
+        unset($payload['tools'], $payload['tool_choice']);
+
+        if (isset($payload['messages']) && is_array($payload['messages'])) {
+            $payload['messages'] = array_map(function ($message) {
+                if (! is_array($message)) {
+                    return $message;
+                }
+
+                if (isset($message['content']) && is_string($message['content'])) {
+                    $message['content'] = Str::limit($message['content'], self::HISTORY_MESSAGE_CHAR_LIMIT);
+                }
+
+                return $message;
+            }, $payload['messages']);
+        }
+
+        return $payload;
+    }
+
     private function renderAssistantHtml(string $content): string
     {
         $converter = new CommonMarkConverter([
             'html_input' => 'strip',
             'allow_unsafe_links' => false,
+            'renderer' => [
+                'soft_break' => "<br>\n",
+            ],
         ]);
 
         return (string) $converter->convert($content);
@@ -233,7 +295,21 @@ class ChatController extends Controller
 
     private function buildSystemInstruction(mixed $user): string
     {
-        $baseInstruction = 'You are an academic administration assistant. Keep responses concise, structured, and useful.';
+        $baseInstruction = implode("\n", [
+            'Role: Academic administration assistant for ASTU Management System.',
+            'Primary objective: give accurate, concise, actionable answers using available context.',
+            'Application context:',
+            '- Admin modules: dashboard, students, departments, calendar, map, policy, automation chat.',
+            '- User is operating inside a Laravel + Blade admin panel.',
+            'Response protocol (token-efficient):',
+            '- Start directly with the answer; no long preamble.',
+            '- Use short structured output: summary first, then key steps/data.',
+            '- Format output as clean Markdown (headings + bullet points when listing items).',
+            '- Do not return a single dense paragraph for multi-point answers.',
+            '- Do not repeat the user request unless necessary for clarity.',
+            '- Ask one concise clarifying question only when critical data is missing.',
+            '- Keep output compact unless user asks for detailed explanation.',
+        ]);
 
         if ($user === null || ! isset($user->id) || ! Schema::hasTable('automation_settings')) {
             return $baseInstruction;
@@ -256,7 +332,7 @@ class ChatController extends Controller
             '- Enabled tool groups: '.$enabledGroupsText,
             '- Enable write tools: '.($settings->enable_write_tools ? 'true' : 'false'),
             '- Confirm destructive actions: '.($settings->confirm_destructive_actions ? 'true' : 'false'),
-            '- Tool execution behavior: when tools are available, you may call them to get live data before answering.',
+            '- Execution behavior: use available live data paths when needed; otherwise answer directly.',
         ];
 
         if ($customPrompt !== '') {
@@ -387,7 +463,7 @@ class ChatController extends Controller
             foreach ($history as $item) {
                 $messages[] = [
                     'role' => $item->role,
-                    'content' => (string) $item->content,
+                    'content' => Str::limit((string) $item->content, self::HISTORY_MESSAGE_CHAR_LIMIT),
                 ];
             }
         }
