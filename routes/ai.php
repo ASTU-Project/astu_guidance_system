@@ -1,5 +1,5 @@
 <?php
 use Laravel\Mcp\Facades\Mcp;
-use App\Mcp\Servers\DepartmentServer;
+use App\Mcp\Servers\SystemServer;
 
-Mcp::web('/mcp/departments', DepartmentServer::class);
+Mcp::web('/mcp/system', SystemServer::class);

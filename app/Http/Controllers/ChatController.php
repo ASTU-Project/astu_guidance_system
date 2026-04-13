@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Mcp\Tools\DepartmentList;
+use App\Mcp\Tools\StudentList;
 use App\Models\AutomationSetting;
 use App\Models\ChatMessage;
-use App\Models\Department;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\JsonResponse;
@@ -13,21 +14,22 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Laravel\Mcp\Request as McpRequest;
 use League\CommonMark\CommonMarkConverter;
 
 class ChatController extends Controller
 {
     private const DEFAULT_MODEL = 'qwen-3-235b-a22b-instruct-2507';
     private const API = 'https://api.cerebras.ai/v1/chat/completions';
-    private const MAX_COMPLETION_TOKENS = 768;
-    private const OVERLOAD_MAX_COMPLETION_TOKENS = 384;
+    private const MAX_COMPLETION_TOKENS = 512;
+    private const OVERLOAD_MAX_COMPLETION_TOKENS = 256;
     private const TEMPERATURE = 0.2;
     private const TOP_P = 1;
     private const RATE_LIMIT_RETRIES = 2;
     private const RATE_LIMIT_BACKOFF_MS = 2000;
+    private const MAX_TOOL_ROUNDS = 4;
     private const HISTORY_LIMIT = 3;
     private const HISTORY_MESSAGE_CHAR_LIMIT = 700;
-    private const DEPARTMENT_CONTEXT_LIMIT = 30;
 
     public function __invoke(Request $request): JsonResponse
     {
@@ -52,90 +54,44 @@ class ChatController extends Controller
         $conversationMessages = $this->buildConversationMessages($user, $sessionId, $message, $systemInstruction);
         $enabledToolGroups = $this->getEnabledToolGroups($user);
         $tools = $this->buildToolDefinitions($enabledToolGroups);
+        $toolingMessages = $conversationMessages;
 
         try {
-            $phaseOnePayload = [
-                'model' => $model,
-                'messages' => $conversationMessages,
-                'max_completion_tokens' => self::MAX_COMPLETION_TOKENS,
-                'temperature' => self::TEMPERATURE,
-                'top_p' => self::TOP_P,
-            ];
+            $assistantMessagePayload = null;
+            $finalAssistantMessage = '';
+            $toolRounds = 0;
 
-            if ($tools !== []) {
-                $phaseOnePayload['tools'] = $tools;
-                $phaseOnePayload['tool_choice'] = 'auto';
-            }
-
-            $phaseOneResponse = $this->postCompletionWithBackoff($apiKey, $phaseOnePayload);
-
-            if (! $phaseOneResponse->successful()) {
-                $status = $phaseOneResponse->status();
-                $friendlyError = 'Unexpected API error.';
-
-                if ($status === 401) {
-                    $friendlyError = 'Invalid API key.';
-                } elseif ($status === 429) {
-                    $friendlyError = 'AI service is busy right now (rate limited). Please wait a moment and try again.';
-                } elseif ($status >= 500) {
-                    $friendlyError = 'AI service is down. Try again later.';
-                }
-
-                Log::warning('Cerebras non-success response', [
-                    'status' => $status,
-                    'body' => $phaseOneResponse->json() ?? $phaseOneResponse->body(),
-                ]);
-
-                return response()->json([
-                    'error' => $friendlyError,
-                ], $status === 429 ? 429 : 502);
-            }
-
-            $assistantMessagePayload = $phaseOneResponse->json('choices.0.message');
-
-            if (! is_array($assistantMessagePayload)) {
-                return response()->json([
-                    'error' => 'AI response format was invalid.',
-                ], 502);
-            }
-
-            $toolCalls = is_array($assistantMessagePayload['tool_calls'] ?? null)
-                ? $assistantMessagePayload['tool_calls']
-                : [];
-
-            $assistantMessage = $assistantMessagePayload['content'] ?? '';
-
-            if ($toolCalls !== []) {
-                $toolResults = [];
-
-                foreach ($toolCalls as $call) {
-                    $toolResults[] = $this->executeToolCall($call, $enabledToolGroups);
-                }
-
-                $phaseTwoResponse = $this->postCompletionWithBackoff($apiKey, [
+            while ($toolRounds < self::MAX_TOOL_ROUNDS) {
+                $payload = [
                     'model' => $model,
-                    'messages' => array_merge($conversationMessages, [$assistantMessagePayload], $toolResults),
+                    'messages' => $toolingMessages,
                     'max_completion_tokens' => self::MAX_COMPLETION_TOKENS,
                     'temperature' => self::TEMPERATURE,
                     'top_p' => self::TOP_P,
-                ]);
+                ];
 
-                if (! $phaseTwoResponse->successful()) {
-                    $status = $phaseTwoResponse->status();
+                if ($tools !== []) {
+                    $payload['tools'] = $tools;
+                    $payload['tool_choice'] = 'auto';
+                }
 
-                    $friendlyError = 'AI tool follow-up request failed. Please retry.';
+                $response = $this->postCompletionWithBackoff($apiKey, $payload);
 
-                    if ($status === 429) {
-                        $friendlyError = 'AI service is busy right now (rate limited). Please wait a moment and try again.';
-                    } elseif ($status === 401) {
+                if (! $response->successful()) {
+                    $status = $response->status();
+                    $friendlyError = 'Unexpected API error.';
+
+                    if ($status === 401) {
                         $friendlyError = 'Invalid API key.';
+                    } elseif ($status === 429) {
+                        $friendlyError = 'AI service is busy right now (rate limited). Please wait a moment and try again.';
                     } elseif ($status >= 500) {
                         $friendlyError = 'AI service is down. Try again later.';
                     }
 
-                    Log::warning('Cerebras phase-two non-success response', [
+                    Log::warning('Cerebras non-success response', [
                         'status' => $status,
-                        'body' => $phaseTwoResponse->json() ?? $phaseTwoResponse->body(),
+                        'body' => $response->json() ?? $response->body(),
                     ]);
 
                     return response()->json([
@@ -143,10 +99,42 @@ class ChatController extends Controller
                     ], $status === 429 ? 429 : 502);
                 }
 
-                $assistantMessage = $phaseTwoResponse->json('choices.0.message.content');
+                $assistantMessagePayload = $response->json('choices.0.message');
+
+                if (! is_array($assistantMessagePayload)) {
+                    return response()->json([
+                        'error' => 'AI response format was invalid.'], 502);
+                }
+
+                $toolCalls = is_array($assistantMessagePayload['tool_calls'] ?? null)
+                    ? $assistantMessagePayload['tool_calls']
+                    : [];
+
+                if ($toolCalls === []) {
+                    $finalAssistantMessage = (string) ($assistantMessagePayload['content'] ?? '');
+                    break;
+                }
+
+                $toolingMessages[] = $assistantMessagePayload;
+
+                foreach ($toolCalls as $call) {
+                    $toolingMessages[] = $this->executeToolCall($call, $enabledToolGroups, $user);
+                }
+
+                $toolRounds++;
             }
 
-            $assistantText = $this->normalizeAssistantContent($assistantMessage);
+            if ($assistantMessagePayload === null) {
+                return response()->json([
+                    'error' => 'AI response was empty.',
+                ], 502);
+            }
+
+            if ($finalAssistantMessage === '' && isset($assistantMessagePayload['content'])) {
+                $finalAssistantMessage = (string) $assistantMessagePayload['content'];
+            }
+
+            $assistantText = $this->normalizeAssistantContent($finalAssistantMessage);
             $assistantHtml = $this->renderAssistantHtml($assistantText);
 
             if ($user !== null && Schema::hasTable('chat_messages')) {
@@ -240,12 +228,17 @@ class ChatController extends Controller
                 return $response;
             }
 
+            $retryAfter = (int) $response->header('Retry-After');
+            $waitMs = $retryAfter > 0
+                ? ($retryAfter * 1000)
+                : (self::RATE_LIMIT_BACKOFF_MS * (2 ** $attempt));
+
             $attempt++;
 
             // On queue saturation, reduce payload cost for the next attempt.
             $requestPayload = $this->buildOverloadPayload($requestPayload);
 
-            usleep((self::RATE_LIMIT_BACKOFF_MS * $attempt) * 1000);
+            usleep($waitMs * 1000);
         }
     }
 
@@ -306,6 +299,9 @@ class ChatController extends Controller
             '- Use short structured output: summary first, then key steps/data.',
             '- Format output as clean Markdown (headings + bullet points when listing items).',
             '- Do not return a single dense paragraph for multi-point answers.',
+            '- When live data is needed, reason internally, pick the right tool(s), call them one by one if needed, review the results, then continue until enough evidence is collected.',
+            '- You may call multiple tools across multiple rounds before answering.',
+            '- If one tool result is incomplete, call another relevant tool before finalizing the response.',
             '- Do not repeat the user request unless necessary for clarity.',
             '- Ask one concise clarifying question only when critical data is missing.',
             '- Keep output compact unless user asks for detailed explanation.',
@@ -383,22 +379,41 @@ class ChatController extends Controller
             ];
         }
 
+        if (in_array('students', $enabledToolGroups, true)) {
+            $tools[] = [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'student_list',
+                    'description' => 'List students with name, student_id, phone, email, department, current_semester_current_section, and cgpa.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [],
+                    ],
+                ],
+            ];
+        }
+
         return $tools;
     }
 
     /**
      * @param array<string, mixed> $call
      * @param array<int, string> $enabledToolGroups
+    * @param mixed $user
      * @return array<string, string>
      */
-    private function executeToolCall(array $call, array $enabledToolGroups): array
+    private function executeToolCall(array $call, array $enabledToolGroups, mixed $user): array
     {
         $callId = (string) ($call['id'] ?? Str::uuid());
         $function = is_array($call['function'] ?? null) ? $call['function'] : [];
         $functionName = (string) ($function['name'] ?? '');
+        $rawArgs = (string) ($function['arguments'] ?? '{}');
+        $decodedArgs = json_decode($rawArgs, true);
+        $args = is_array($decodedArgs) ? $decodedArgs : [];
 
         $resultPayload = match ($functionName) {
-            'department_list' => $this->runDepartmentListTool($enabledToolGroups),
+            'department_list' => $this->runMcpTool(new DepartmentList(), $enabledToolGroups, 'departments', $user, $args),
+            'student_list' => $this->runMcpTool(new StudentList(), $enabledToolGroups, 'students', $user, $args),
             default => [
                 'error' => 'Unknown tool requested: '.$functionName,
             ],
@@ -412,26 +427,59 @@ class ChatController extends Controller
     }
 
     /**
+     * Execute MCP tool class directly to avoid duplicating tool logic in chat controller.
+     *
+     * @param object $tool
      * @param array<int, string> $enabledToolGroups
+    * @param mixed $user
+     * @param array<string, mixed> $args
      * @return array<string, mixed>
      */
-    private function runDepartmentListTool(array $enabledToolGroups): array
+    private function runMcpTool(object $tool, array $enabledToolGroups, string $requiredGroup, mixed $user, array $args = []): array
     {
-        if (! in_array('departments', $enabledToolGroups, true)) {
+        if (! in_array($requiredGroup, $enabledToolGroups, true)) {
             return [
-                'error' => 'Department tool is disabled in settings.',
+                'error' => ucfirst($requiredGroup).' tool is disabled in settings.',
             ];
         }
 
-        $departments = Department::query()
-            ->select(['id', 'name', 'code', 'min_gpa', 'spot_limit'])
-            ->orderBy('name')
-            ->limit(self::DEPARTMENT_CONTEXT_LIMIT)
-            ->get();
+        try {
+            $mcpRequest = new McpRequest(array_merge(['user' => $user], $args));
+
+            if (method_exists($tool, 'handle')) {
+                $mcpResponse = $tool->handle($mcpRequest);
+
+                if (method_exists($mcpResponse, 'content')) {
+                    $content = $mcpResponse->content();
+
+                    if (is_array($content)) {
+                        return $content;
+                    }
+
+                    if (is_string($content)) {
+                        $decoded = json_decode($content, true);
+
+                        if (is_array($decoded)) {
+                            return $decoded;
+                        }
+
+                        return ['result' => $content];
+                    }
+                }
+            }
+        } catch (\Throwable $exception) {
+            Log::warning('MCP tool execution failed in chat', [
+                'tool' => get_class($tool),
+                'message' => $exception->getMessage(),
+            ]);
+
+            return [
+                'error' => 'Tool execution failed for '.$requiredGroup.'.',
+            ];
+        }
 
         return [
-            'count' => $departments->count(),
-            'departments' => $departments->toArray(),
+            'error' => 'Tool returned no usable content.',
         ];
     }
 
