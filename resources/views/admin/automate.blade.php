@@ -20,6 +20,9 @@
                     <div class="mt-auto p-2">
                         <div class="mx-auto max-w-4xl rounded-md border border-slate-200 bg-white shadow">
                             <div class="flex items-center gap-2 p-1">
+                                <button id="new-chat-button" type="button" class="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-100" title="Start New Chat">
+                                    New Chat
+                                </button>
                                 <input
                                     id="chat-message-input"
                                     type="text"
@@ -150,6 +153,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             const messageInput = document.getElementById('chat-message-input');
             const sendButton = document.getElementById('chat-send-button');
+            const newChatButton = document.getElementById('new-chat-button');
             const chatThread = document.getElementById('chat-thread');
             const toolsModal = document.getElementById('tools-modal');
             const saveSettingsButton = document.getElementById('save-settings-button');
@@ -164,6 +168,56 @@
 
             let sessionId = localStorage.getItem('automate_chat_session_id') || '';
             let isSending = false;
+            const DRAFT_STORAGE_KEY = 'automate_chat_draft';
+            const THREAD_STORAGE_KEY = 'automate_chat_thread_html';
+
+            const persistDraft = function () {
+                sessionStorage.setItem(DRAFT_STORAGE_KEY, messageInput.value || '');
+            };
+
+            const persistChatThread = function () {
+                sessionStorage.setItem(THREAD_STORAGE_KEY, chatThread.innerHTML || '');
+            };
+
+            const restoreDraft = function () {
+                const savedDraft = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+
+                if (typeof savedDraft === 'string') {
+                    messageInput.value = savedDraft;
+                }
+            };
+
+            const restoreChatThread = function () {
+                const savedThread = sessionStorage.getItem(THREAD_STORAGE_KEY);
+
+                if (typeof savedThread === 'string' && savedThread.trim() !== '') {
+                    chatThread.innerHTML = savedThread;
+                    scrollToBottom();
+                }
+            };
+
+            const startNewChat = function () {
+                if (isSending) {
+                    return;
+                }
+
+                const hasMessages = chatThread.childElementCount > 0;
+                const hasDraft = messageInput.value.trim().length > 0;
+
+                if ((hasMessages || hasDraft) && !window.confirm('Start a new chat? Current visible conversation will be cleared.')) {
+                    return;
+                }
+
+                sessionId = '';
+                localStorage.removeItem('automate_chat_session_id');
+                sessionStorage.removeItem(THREAD_STORAGE_KEY);
+                sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+
+                chatThread.innerHTML = '';
+                messageInput.value = '';
+                toggleSendButton();
+                messageInput.focus();
+            };
 
             const toggleSendButton = function () {
                 const hasValue = messageInput.value.trim().length > 0;
@@ -192,6 +246,7 @@
 
                 chatThread.appendChild(wrapper);
                 scrollToBottom();
+                persistChatThread();
             };
 
             const appendAssistantMessage = function (text, html) {
@@ -215,6 +270,28 @@
 
                 chatThread.appendChild(wrapper);
                 scrollToBottom();
+                persistChatThread();
+            };
+
+            const appendAssistantLoading = function () {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-end gap-3';
+
+                wrapper.innerHTML = `
+                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
+                    <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-600">
+                        <span class="inline-flex items-center gap-1">
+                            <span>Thinking</span>
+                            <span class="animate-pulse">...</span>
+                        </span>
+                    </div>
+                `;
+
+                chatThread.appendChild(wrapper);
+                scrollToBottom();
+                persistChatThread();
+
+                return wrapper;
             };
 
             const getSelectedToolGroups = function () {
@@ -352,6 +429,8 @@
             };
 
             loadAutomationSettings();
+            restoreDraft();
+            restoreChatThread();
 
             const sendMessage = async function () {
                 const text = messageInput.value.trim();
@@ -365,7 +444,9 @@
 
                 appendUserMessage(text);
                 messageInput.value = '';
+                persistDraft();
                 toggleSendButton();
+                const loadingBubble = appendAssistantLoading();
 
                 try {
                     const response = await fetch(chatThread.dataset.chatUrl, {
@@ -385,8 +466,8 @@
 
                     if (!response.ok) {
                         const details = typeof data.details === 'string'
-                            ? data.details
-                            : JSON.stringify(data.details || {});
+                            ? data.details.trim()
+                            : (data.details && Object.keys(data.details).length > 0 ? JSON.stringify(data.details) : '');
 
                         throw new Error([data.error || 'Chat request failed.', details]
                             .filter(Boolean)
@@ -398,8 +479,12 @@
                         localStorage.setItem('automate_chat_session_id', sessionId);
                     }
 
+                    loadingBubble.remove();
+                    persistChatThread();
                     appendAssistantMessage(data.message || 'No response content returned.', data.message_html || '');
                 } catch (error) {
+                    loadingBubble.remove();
+                    persistChatThread();
                     appendAssistantMessage(error.message || 'Unable to connect to assistant.');
                 } finally {
                     isSending = false;
@@ -408,12 +493,32 @@
             };
 
             toggleSendButton();
-            messageInput.addEventListener('input', toggleSendButton);
+            messageInput.addEventListener('input', function () {
+                toggleSendButton();
+                persistDraft();
+            });
             sendButton.addEventListener('click', sendMessage);
+            newChatButton?.addEventListener('click', startNewChat);
             messageInput.addEventListener('keydown', function (event) {
                 if (event.key === 'Enter') {
                     event.preventDefault();
                     sendMessage();
+                }
+            });
+
+            document.addEventListener('keydown', function (event) {
+                const isReloadShortcut = event.key === 'F5'
+                    || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r');
+
+                if (isReloadShortcut) {
+                    event.preventDefault();
+                }
+            });
+
+            window.addEventListener('beforeunload', function (event) {
+                if (isSending || messageInput.value.trim().length > 0) {
+                    event.preventDefault();
+                    event.returnValue = '';
                 }
             });
 

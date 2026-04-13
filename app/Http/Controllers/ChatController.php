@@ -8,6 +8,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use League\CommonMark\CommonMarkConverter;
@@ -16,6 +17,7 @@ class ChatController extends Controller
 {
     private const DEFAULT_MODEL = 'qwen-3-235b-a22b-instruct-2507';
     private const API = 'https://api.cerebras.ai/v1/chat/completions';
+    private const HISTORY_LIMIT = 10;
 
     public function __invoke(Request $request): JsonResponse
     {
@@ -37,6 +39,7 @@ class ChatController extends Controller
         $message = trim($validated['message']);
         $sessionId = $validated['session_id'] ?? (string) Str::uuid();
         $systemInstruction = $this->buildSystemInstruction($user);
+        $conversationMessages = $this->buildConversationMessages($user, $sessionId, $message, $systemInstruction);
 
         try {
             $response = Http::withToken($apiKey)
@@ -52,24 +55,30 @@ class ChatController extends Controller
                 })
                 ->post(self::API, [
                     'model' => $model,
-                    'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => $systemInstruction,
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => $message,
-                        ],
-                    ],
+                    'messages' => $conversationMessages,
                     'max_completion_tokens' => 1200,
                 ]);
 
             if (! $response->successful()) {
+                $status = $response->status();
+                $friendlyError = 'Unexpected API error.';
+
+                if ($status === 401) {
+                    $friendlyError = 'Invalid API key.';
+                } elseif ($status === 429) {
+                    $friendlyError = 'Too many requests. Please slow down.';
+                } elseif ($status >= 500) {
+                    $friendlyError = 'AI service is down. Try again later.';
+                }
+
+                Log::warning('Cerebras non-success response', [
+                    'status' => $status,
+                    'body' => $response->json() ?? $response->body(),
+                ]);
+
                 return response()->json([
-                    'error' => 'Cerebras request failed.',
-                    'details' => $response->json() ?? $response->body(),
-                ], 502);
+                    'error' => $friendlyError,
+                ], $status === 429 ? 429 : 502);
             }
 
             $assistantMessage = $response->json('choices.0.message.content');
@@ -98,14 +107,20 @@ class ChatController extends Controller
                 'session_id' => $sessionId,
             ]);
         } catch (ConnectionException $exception) {
+            Log::warning('Cerebras connection exception', [
+                'message' => $exception->getMessage(),
+            ]);
+
             return response()->json([
                 'error' => 'Network connection to Cerebras was reset. Please retry.',
-                'details' => $exception->getMessage(),
             ], 503);
         } catch (\Throwable $exception) {
+            Log::error('Chat controller exception', [
+                'message' => $exception->getMessage(),
+            ]);
+
             return response()->json([
                 'error' => 'Unable to complete chat request.',
-                'details' => $exception->getMessage(),
             ], 500);
         }
     }
@@ -177,5 +192,46 @@ class ChatController extends Controller
         }
 
         return implode("\n", $context);
+    }
+
+    /**
+     * Build a simple chat history context: system + last N session messages + current user message.
+     *
+     * @return array<int, array<string, string>>
+     */
+    private function buildConversationMessages(mixed $user, string $sessionId, string $currentMessage, string $systemInstruction): array
+    {
+        $messages = [
+            [
+                'role' => 'system',
+                'content' => $systemInstruction,
+            ],
+        ];
+
+        if ($user !== null && isset($user->id) && Schema::hasTable('chat_messages')) {
+            $history = ChatMessage::query()
+                ->where('user_id', $user->id)
+                ->where('session_id', $sessionId)
+                ->whereIn('role', ['user', 'assistant'])
+                ->latest('id')
+                ->limit(self::HISTORY_LIMIT)
+                ->get(['role', 'content'])
+                ->reverse()
+                ->values();
+
+            foreach ($history as $item) {
+                $messages[] = [
+                    'role' => $item->role,
+                    'content' => (string) $item->content,
+                ];
+            }
+        }
+
+        $messages[] = [
+            'role' => 'user',
+            'content' => $currentMessage,
+        ];
+
+        return $messages;
     }
 }
