@@ -25,6 +25,12 @@ A Laravel-based university management system with a Blade admin panel for studen
 	- Event color picker with restricted palette and persisted selection.
 	- Validation old-input restore for failed submissions.
 	- Click-to-edit popup modal wired to update event records.
+- Automation chat now has:
+	- Direct AI chat flow for admins.
+	- Session-based conversation memory.
+	- Saved user automation settings and recent chat history.
+	- Reload protection and draft/session restore in the browser.
+	- New Chat reset for starting a fresh conversation.
 - Data setup includes student factory-based seeding for test data.
 - Core models prepared with fillable/casts and relations for major entities.
 
@@ -35,6 +41,7 @@ A Laravel-based university management system with a Blade admin panel for studen
 - Add CRUD pages for additional admin modules (subjects, grades).
 - Improve dashboard analytics to be fully data-driven (messages/graphs from DB).
 - Add feature tests for auth-protected admin flows.
+- Expand automation chat with tool execution if needed later.
 
 ## Main Modules
 - Authentication (`/login`, `/logout`)
@@ -42,7 +49,7 @@ A Laravel-based university management system with a Blade admin panel for studen
 - Students management (`/admin/students`)
 - Departments management (`/admin/departments`)
 - Calendar management (`/admin/calendar`, `/admin/calendar/Events/{id}`)
-- Other admin stubs: map, policy, blog, message, automate
+- Other admin modules: map, policy, automate
 
 ## Calendar Routes
 
@@ -58,11 +65,35 @@ A Laravel-based university management system with a Blade admin panel for studen
 - `event_date` empty: event is treated as recurring weekly using `day`.
 - When `event_date` is provided, backend derives `day` from the date.
 
+## Automation Chat
+
+The admin automation page is now a working chat interface that sends a message to the backend, forwards it to Cerebras AI, and shows the response in the browser.
+
+### Main Routes
+
+- `GET /admin/automate` -> open the chat page
+- `POST /admin/automate/chat` -> send a chat message to the AI controller
+- `GET /admin/automation-settings` -> load saved chat settings and recent history
+- `PUT /admin/automation-settings` -> save chat settings
+
+### What the chat does
+
+- Keeps a session id so the conversation continues across messages.
+- Stores user and assistant messages in the database.
+- Loads user automation settings into the AI prompt.
+- Saves the draft and visible chat thread in the browser so reloads do not wipe the screen.
+- Lets the user start a new chat with a clean session.
+
+### Documentation
+
+See [CHAT_FLOW.md](CHAT_FLOW.md) for a full plain-English walkthrough of the chat data flow, function calls, and backend/frontend logic.
+
 ## Tech Stack
 - Laravel 12
 - Blade templates
 - Eloquent ORM
 - Tailwind CSS
+- Cerebras AI chat completions API
 
 ## Setup
 
@@ -87,3 +118,4 @@ The seeder creates a test account:
 ## Notes
 - Admin routes are protected by `auth` middleware.
 - Students and departments data are now displayed from live database values.
+- The automation chat uses `chat_messages` and `automation_settings` tables to persist session state and user preferences.
