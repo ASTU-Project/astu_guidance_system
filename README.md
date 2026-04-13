@@ -84,12 +84,9 @@ The admin automation page is now a working chat interface that sends a message t
 - Saves the draft and visible chat thread in the browser so reloads do not wipe the screen.
 - Lets the user start a new chat with a clean session.
 
-### Documentation
-
-See [CHAT_FLOW.md](CHAT_FLOW.md) for a full plain-English walkthrough of the chat data flow, function calls, and backend/frontend logic.
 
 ## Tech Stack
-- Laravel 12
+- Laravel 13
 - Blade templates
 - Eloquent ORM
 - Tailwind CSS
