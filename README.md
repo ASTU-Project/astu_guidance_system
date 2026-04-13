@@ -86,7 +86,7 @@ The admin automation page is now a working chat interface that sends a message t
 
 
 ## Tech Stack
-- Laravel 12
+- Laravel 13
 - Blade templates
 - Eloquent ORM
 - Tailwind CSS
