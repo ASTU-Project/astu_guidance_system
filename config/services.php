@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'cerebras' => [
+        'key' => env('CEREBRAS_API_KEY'),
+        'model' => env('CEREBRAS_MODEL', 'qwen-3-235b-a22b-instruct-2507'),
+    ],
+
 ];

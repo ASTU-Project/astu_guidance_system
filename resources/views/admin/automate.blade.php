@@ -11,35 +11,9 @@
                 <section class="flex h-[calc(100vh-5rem)] sm:h-[calc(100vh-6rem)] flex-col bg-slate-50">
 
                     <div class="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-                        <div class="mx-auto flex max-w-4xl flex-col gap-4">
-                            <div class="flex items-end gap-3">
-                                <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
-                                <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-700">
-                                    I can help you manage policies, departments, students, calendar data, and MCP tools.
-                                    <div class="mt-2 text-[11px] text-slate-400">Today, 10:48 AM</div>
-                                </div>
-                            </div>
+                        <div id="chat-thread" class="mx-auto flex max-w-4xl flex-col gap-4" data-chat-url="{{ route('admin.automate.chat') }}">
 
-                            <div class="flex items-end justify-end gap-3">
-                                <div class="max-w-[82%] rounded-2xl rounded-br-md bg-slate-900 px-4 py-3 text-sm text-white">
-                                    Show me the available MCP tools and current endpoint.
-                                    <div class="mt-2 text-[11px] text-slate-300">Today, 10:49 AM</div>
-                                </div>
-                                <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-white">B</div>
-                            </div>
 
-                            <div class="flex items-end gap-3">
-                                <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
-                                <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-700">
-                                    <small>
-                                        <b>Used Tools:</b>
-                                        <span class="bg-slate-900 text-white p-1 px-3 font-bold rounded-xl">DepartmentList</span> 
-                                        <span class="bg-slate-900 text-white p-1 px-3 font-bold rounded-xl">ListPoliciesTool</span>
-                                    </small>
-                                    <p  class="mt-2">Demo tools are ready. Open the tools popup to edit endpoint settings and permissions.</p>
-                                    <div class="mt-2 text-[11px] text-slate-400">Today, 10:49 AM</div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -63,7 +37,7 @@
         </div>
     </div>
 
-    <div id="tools-modal" class="hidden fixed inset-0 z-50 items-center justify-center px-4">
+    <div id="tools-modal" class="hidden fixed inset-0 z-50 items-center justify-center px-4" data-settings-url="{{ route('admin.automation-settings.show') }}" data-settings-save-url="{{ route('admin.automation-settings.update') }}">
         <div class="absolute inset-0 bg-slate-950/60" onclick="closeToolsModal()"></div>
 
         <div class="relative w-full max-w-4xl rounded-md bg-white shadow-2xl overflow-hidden">
@@ -82,11 +56,11 @@
                         <h4 class="mb-3 text-sm font-semibold text-slate-900">Safety</h4>
                         <label class="flex items-center justify-between rounded-lg border p-3 text-sm text-slate-700">
                             <span>Enable write tools</span>
-                            <input type="checkbox" class="h-4 w-4 rounded border-slate-300">
+                            <input id="enable-write-tools" type="checkbox" class="h-4 w-4 rounded border-slate-300">
                         </label>
                         <label class="mt-3 flex items-center justify-between rounded-lg border p-3 text-sm text-slate-700">
                             <span>Confirm destructive actions</span>
-                            <input type="checkbox" checked class="h-4 w-4 rounded border-slate-300">
+                            <input id="confirm-destructive-actions" type="checkbox" checked class="h-4 w-4 rounded border-slate-300">
                         </label>
                     </div>
 
@@ -116,26 +90,26 @@
                         <div class="space-y-3 text-sm text-slate-700">
                             <label class="flex items-center justify-between rounded-lg border p-3">
                                 <span>Student Tools</span>
-                                <input type="checkbox" checked class="h-4 w-4 rounded border-slate-300">
+                                <input type="checkbox" data-tool-group="students" checked class="h-4 w-4 rounded border-slate-300">
                             </label>
                             <label class="flex items-center justify-between rounded-lg border p-3">
                                 <span>Department Tools</span>
-                                <input type="checkbox" checked class="h-4 w-4 rounded border-slate-300">
+                                <input type="checkbox" data-tool-group="departments" checked class="h-4 w-4 rounded border-slate-300">
                             </label>
                             <label class="flex items-center justify-between rounded-lg border p-3">
                                 <span>Calendar Tools</span>
-                                <input type="checkbox" checked class="h-4 w-4 rounded border-slate-300">
+                                <input type="checkbox" data-tool-group="calendar" checked class="h-4 w-4 rounded border-slate-300">
                             </label>
                             <label class="flex items-center justify-between rounded-lg border p-3">
                                 <span>Policy Tools</span>
-                                <input type="checkbox" checked class="h-4 w-4 rounded border-slate-300">
+                                <input type="checkbox" data-tool-group="policies" checked class="h-4 w-4 rounded border-slate-300">
                             </label>
                         </div>
                     </div>
 
                     <div class="rounded-xl p-4">
                         <h4 class="mb-3 text-sm font-semibold text-slate-900">System Prompt</h4>
-                        <textarea rows="7" class="w-full rounded-md border p-3 text-sm outline-none">Act as an academic administration assistant. Stay concise and only use enabled demo tools.</textarea>
+                        <textarea id="system-prompt" rows="7" class="w-full rounded-md border p-3 text-sm outline-none">Act as an academic administration assistant. Stay concise and only use enabled demo tools.</textarea>
                     </div>
                 </div>
             </div>
@@ -144,7 +118,7 @@
                 <button type="button" onclick="closeToolsModal()" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
                     Cancel
                 </button>
-                <button type="button" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                <button id="save-settings-button" type="button" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
                     Save Settings
                 </button>
             </div>
@@ -183,18 +157,223 @@
         document.addEventListener('DOMContentLoaded', function () {
             const messageInput = document.getElementById('chat-message-input');
             const sendButton = document.getElementById('chat-send-button');
+            const chatThread = document.getElementById('chat-thread');
+            const toolsModal = document.getElementById('tools-modal');
+            const saveSettingsButton = document.getElementById('save-settings-button');
+            const enableWriteTools = document.getElementById('enable-write-tools');
+            const confirmDestructiveActions = document.getElementById('confirm-destructive-actions');
+            const systemPrompt = document.getElementById('system-prompt');
 
-            if (!messageInput || !sendButton) {
+            if (!messageInput || !sendButton || !chatThread) {
                 return;
             }
+
+            let sessionId = localStorage.getItem('automate_chat_session_id') || '';
+            let isSending = false;
 
             const toggleSendButton = function () {
                 const hasValue = messageInput.value.trim().length > 0;
                 sendButton.classList.toggle('hidden', !hasValue);
             };
 
+            const scrollToBottom = function () {
+                chatThread.parentElement.scrollTop = chatThread.parentElement.scrollHeight;
+            };
+
+            const timestamp = function () {
+                return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            };
+
+            const appendUserMessage = function (text) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-end justify-end gap-3';
+
+                wrapper.innerHTML = `
+                    <div class="max-w-[82%] rounded-2xl rounded-br-md bg-slate-900 px-4 py-3 text-sm text-white">
+                        ${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                        <div class="mt-2 text-[11px] text-slate-300">${timestamp()}</div>
+                    </div>
+                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-white">B</div>
+                `;
+
+                chatThread.appendChild(wrapper);
+                scrollToBottom();
+            };
+
+            const appendAssistantMessage = function (text) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-end gap-3';
+
+                wrapper.innerHTML = `
+                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
+                    <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-700">
+                         <small>
+                            <b>Used Tools:</b>
+                            <span class="bg-slate-900 text-white p-1 px-3 font-bold rounded-xl">DepartmentList</span> 
+                            <span class="bg-slate-900 text-white p-1 px-3 font-bold rounded-xl">ListPoliciesTool</span>
+                        </small>
+                        <p class="text-slate-700 mt-2">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</p>
+                        <div class="mt-2 text-[11px] text-slate-400">${timestamp()}</div>
+                    </div>
+                `;
+
+                chatThread.appendChild(wrapper);
+                scrollToBottom();
+            };
+
+            const getSelectedToolGroups = function () {
+                return Array.from(document.querySelectorAll('[data-tool-group]'))
+                    .filter(function (checkbox) {
+                        return checkbox.checked;
+                    })
+                    .map(function (checkbox) {
+                        return checkbox.getAttribute('data-tool-group');
+                    })
+                    .filter(Boolean);
+            };
+
+            const setSelectedToolGroups = function (groups) {
+                const selectedGroups = Array.isArray(groups) ? groups : [];
+
+                document.querySelectorAll('[data-tool-group]').forEach(function (checkbox) {
+                    checkbox.checked = selectedGroups.includes(checkbox.getAttribute('data-tool-group'));
+                });
+            };
+
+            const loadAutomationSettings = async function () {
+                if (!toolsModal?.dataset.settingsUrl) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(toolsModal.dataset.settingsUrl, {
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Failed to load automation settings.');
+                    }
+
+                    const settings = data.settings || {};
+                    enableWriteTools.checked = Boolean(settings.enable_write_tools);
+                    confirmDestructiveActions.checked = Boolean(settings.confirm_destructive_actions ?? true);
+                    setSelectedToolGroups(settings.enabled_tool_groups || []);
+                    systemPrompt.value = settings.system_prompt || '';
+                } catch (error) {
+                    console.error(error);
+                }
+            };
+
+            const saveAutomationSettings = async function () {
+                if (!toolsModal?.dataset.settingsSaveUrl) {
+                    return;
+                }
+
+                saveSettingsButton.disabled = true;
+                saveSettingsButton.textContent = 'Saving...';
+
+                try {
+                    const response = await fetch(toolsModal.dataset.settingsSaveUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            enable_write_tools: enableWriteTools.checked,
+                            confirm_destructive_actions: confirmDestructiveActions.checked,
+                            enabled_tool_groups: getSelectedToolGroups(),
+                            system_prompt: systemPrompt.value,
+                        }),
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Failed to save automation settings.');
+                    }
+
+                    closeToolsModal();
+                } catch (error) {
+                    appendAssistantMessage(error.message || 'Unable to save automation settings.');
+                } finally {
+                    saveSettingsButton.disabled = false;
+                    saveSettingsButton.textContent = 'Save Settings';
+                }
+            };
+
+            loadAutomationSettings();
+
+            const sendMessage = async function () {
+                const text = messageInput.value.trim();
+
+                if (!text || isSending) {
+                    return;
+                }
+
+                isSending = true;
+                sendButton.disabled = true;
+
+                appendUserMessage(text);
+                messageInput.value = '';
+                toggleSendButton();
+
+                try {
+                    const response = await fetch(chatThread.dataset.chatUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: text,
+                            session_id: sessionId,
+                        }),
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        const details = typeof data.details === 'string'
+                            ? data.details
+                            : JSON.stringify(data.details || {});
+
+                        throw new Error([data.error || 'Chat request failed.', details]
+                            .filter(Boolean)
+                            .join('\n'));
+                    }
+
+                    if (data.session_id) {
+                        sessionId = data.session_id;
+                        localStorage.setItem('automate_chat_session_id', sessionId);
+                    }
+
+                    appendAssistantMessage(data.message || 'No response content returned.');
+                } catch (error) {
+                    appendAssistantMessage(error.message || 'Unable to connect to assistant.');
+                } finally {
+                    isSending = false;
+                    sendButton.disabled = false;
+                }
+            };
+
             toggleSendButton();
             messageInput.addEventListener('input', toggleSendButton);
+            sendButton.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            saveSettingsButton?.addEventListener('click', saveAutomationSettings);
         });
     </script>
 @endpush

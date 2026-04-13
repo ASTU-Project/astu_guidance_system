@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CalendarController;
 use App\Http\Controllers\Admin\CalendarEventController;
+use App\Http\Controllers\Admin\AutomationSettingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\MapLocationController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\Admin\PolicyRuleController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\ChatController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -55,9 +57,13 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/admin/profile', [ProfileController::class, 'updateProfile'])->name('admin.profile.update');
     Route::put('/admin/profile/password', [ProfileController::class, 'updatePassword'])->name('admin.profile.password.update');
 
+    Route::get('/admin/automation-settings', [AutomationSettingController::class, 'show'])->name('admin.automation-settings.show');
+    Route::put('/admin/automation-settings', [AutomationSettingController::class, 'update'])->name('admin.automation-settings.update');
+
     Route::get('/admin/automate', function () {
         return view('admin.automate');
     })->name('admin.automate');
+    Route::post('/admin/automate/chat', ChatController::class)->name('admin.automate.chat');
 
 
 });
