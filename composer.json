@@ -12,6 +12,7 @@
         "php": "^8.3",
         "inertiajs/inertia-laravel": "*",
         "laravel/framework": "^13.0",
+        "laravel/mcp": "^0.6.5",
         "laravel/tinker": "^3.0"
     },
     "require-dev": {

@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('code')->unique();
             $table->integer('spot_limit');
             $table->decimal('min_gpa', 3, 2); 
-            // $table->json('subject_weights');
             $table->timestamps();
         });
     }
