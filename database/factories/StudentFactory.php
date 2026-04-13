@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\Student;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 
@@ -20,7 +19,6 @@ class StudentFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
             'name' => $this->faker->name(),
             'student_id' => $this->faker->unique()->numerify('UGR/#####/14'),
             'phone' => $this->faker->optional()->numerify('09########'),

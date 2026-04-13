@@ -10,21 +10,30 @@ use App\Http\Controllers\Admin\PolicyRuleController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\StudentLoginController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\Student\ProfileController as StudentProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/login', function () {
-    return view('auth.login');
-})->name('login');
+Route::middleware(['guest:web'])->group(function () {
+    Route::get('/admin/login', [LoginController::class, 'showLoginForm'])->name('admin.login');
+    Route::post('/admin/login', [LoginController::class, 'login'])->name('admin.login.submit');
+});
 
-Route::post('/login', [LoginController::class, 'login']);
+Route::middleware(['guest:student'])->group(function () {
+    Route::get('/login', [StudentLoginController::class, 'showLoginForm'])->name('student.login');
+    Route::post('/login', [StudentLoginController::class, 'login'])->name('student.login.submit');
+    Route::get('/student/login', [StudentLoginController::class, 'showLoginForm']);
+    Route::post('/student/login', [StudentLoginController::class, 'login']);
+});
+
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth:web'])->group(function () {
     Route::get('/admin', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
@@ -66,4 +75,16 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/automate/chat', ChatController::class)->name('admin.automate.chat');
 
 
+});
+
+Route::middleware(['auth:student'])->group(function () {
+    Route::get('/student/dashboard', function () {
+        return view('student.dashboard');
+    })->name('student.dashboard');
+
+    Route::get('/student/profile', [StudentProfileController::class, 'edit'])->name('student.profile.edit');
+    Route::put('/student/profile', [StudentProfileController::class, 'updateProfile'])->name('student.profile.update');
+    Route::put('/student/profile/password', [StudentProfileController::class, 'updatePassword'])->name('student.profile.password.update');
+
+    Route::post('/student/logout', [StudentLoginController::class, 'logout'])->name('student.logout');
 });

@@ -3,18 +3,17 @@
 namespace App\Models;
 
 use App\Models\Grade;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Notifications\Notifiable;
 
-class Student extends Model
+class Student extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\StudentFactory> */
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
-        'user_id',
         'name',
         'student_id',
         'phone',
@@ -33,10 +32,9 @@ class Student extends Model
         'password' => 'hashed',
     ];
 
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
+    protected $hidden = [
+        'password',
+    ];
 
     public function events(): HasMany
     {
