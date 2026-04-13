@@ -66,19 +66,8 @@
 
                     <div class="rounded-xl p-4">
                         <h4 class="mb-3 text-sm font-semibold text-slate-900">History</h4>
-                        <div class="space-y-2">
-                            <div class="rounded-lg border p-3">
-                                <p class="text-xs font-medium text-slate-800">Used tool: GPA Summary Calculator</p>
-                                <p class="text-[11px] text-slate-500">Today, 10:48 AM</p>
-                            </div>
-                            <div class="rounded-lg border p-3">
-                                <p class="text-xs font-medium text-slate-800">Used tool: Add Department</p>
-                                <p class="text-[11px] text-slate-500">Today, 10:46 AM</p>
-                            </div>
-                            <div class="rounded-lg border p-3">
-                                <p class="text-xs font-medium text-slate-800">Used tool: List Departments</p>
-                                <p class="text-[11px] text-slate-500">Today, 10:43 AM</p>
-                            </div>
+                        <div id="chat-history-list" class="space-y-2">
+                            <div class="rounded-lg border p-3 text-xs text-slate-500">No chat history yet.</div>
                         </div>
                     </div>
                 </div>
@@ -140,6 +129,10 @@
             const modal = document.getElementById('tools-modal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+
+            if (typeof window.refreshAutomationSettings === 'function') {
+                window.refreshAutomationSettings();
+            }
         }
 
         function closeToolsModal() {
@@ -163,6 +156,7 @@
             const enableWriteTools = document.getElementById('enable-write-tools');
             const confirmDestructiveActions = document.getElementById('confirm-destructive-actions');
             const systemPrompt = document.getElementById('system-prompt');
+            const chatHistoryList = document.getElementById('chat-history-list');
 
             if (!messageInput || !sendButton || !chatThread) {
                 return;
@@ -200,19 +194,21 @@
                 scrollToBottom();
             };
 
-            const appendAssistantMessage = function (text) {
+            const appendAssistantMessage = function (text, html) {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'flex items-end gap-3';
+
+                const safeText = (text || '')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/\n/g, '<br>');
+
+                const formattedContent = (typeof html === 'string' && html.trim() !== '') ? html : safeText;
 
                 wrapper.innerHTML = `
                     <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
                     <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-700">
-                         <small>
-                            <b>Used Tools:</b>
-                            <span class="bg-slate-900 text-white p-1 px-3 font-bold rounded-xl">DepartmentList</span> 
-                            <span class="bg-slate-900 text-white p-1 px-3 font-bold rounded-xl">ListPoliciesTool</span>
-                        </small>
-                        <p class="text-slate-700 mt-2">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</p>
+                        <div class="prose prose-sm max-w-none prose-slate">${formattedContent}</div>
                         <div class="mt-2 text-[11px] text-slate-400">${timestamp()}</div>
                     </div>
                 `;
@@ -240,6 +236,53 @@
                 });
             };
 
+            const formatHistoryTime = function (dateString) {
+                if (!dateString) {
+                    return 'Unknown time';
+                }
+
+                const date = new Date(dateString.replace(' ', 'T'));
+
+                if (Number.isNaN(date.getTime())) {
+                    return dateString;
+                }
+
+                return date.toLocaleString([], {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            };
+
+            const renderHistory = function (historyItems) {
+                if (!chatHistoryList) {
+                    return;
+                }
+
+                chatHistoryList.innerHTML = '';
+
+                if (!Array.isArray(historyItems) || historyItems.length === 0) {
+                    chatHistoryList.innerHTML = '<div class="rounded-lg border p-3 text-xs text-slate-500">No chat history yet.</div>';
+                    return;
+                }
+
+                historyItems.slice(0, 5).forEach(function (item) {
+                    const role = item.role === 'assistant' ? 'Assistant' : 'User';
+                    const content = (item.content || '').toString();
+                    const preview = content.length > 90 ? `${content.slice(0, 90)}...` : content;
+
+                    const row = document.createElement('div');
+                    row.className = 'rounded-lg border p-3';
+                    row.innerHTML = `
+                        <p class="text-xs font-medium text-slate-800">${role}: ${preview.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+                        <p class="text-[11px] text-slate-500 mt-1">${formatHistoryTime(item.created_at)}</p>
+                    `;
+
+                    chatHistoryList.appendChild(row);
+                });
+            };
+
             const loadAutomationSettings = async function () {
                 if (!toolsModal?.dataset.settingsUrl) {
                     return;
@@ -263,6 +306,7 @@
                     confirmDestructiveActions.checked = Boolean(settings.confirm_destructive_actions ?? true);
                     setSelectedToolGroups(settings.enabled_tool_groups || []);
                     systemPrompt.value = settings.system_prompt || '';
+                    renderHistory(data.history || []);
                 } catch (error) {
                     console.error(error);
                 }
@@ -354,7 +398,7 @@
                         localStorage.setItem('automate_chat_session_id', sessionId);
                     }
 
-                    appendAssistantMessage(data.message || 'No response content returned.');
+                    appendAssistantMessage(data.message || 'No response content returned.', data.message_html || '');
                 } catch (error) {
                     appendAssistantMessage(error.message || 'Unable to connect to assistant.');
                 } finally {
@@ -374,6 +418,8 @@
             });
 
             saveSettingsButton?.addEventListener('click', saveAutomationSettings);
+
+            window.refreshAutomationSettings = loadAutomationSettings;
         });
     </script>
 @endpush

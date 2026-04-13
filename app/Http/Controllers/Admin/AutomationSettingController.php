@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AutomationSetting;
+use App\Models\ChatMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class AutomationSettingController extends Controller
 {
@@ -24,6 +26,25 @@ class AutomationSettingController extends Controller
             ]
         );
 
+        $history = [];
+
+        if (Schema::hasTable('chat_messages')) {
+            $history = ChatMessage::query()
+                ->where('user_id', $user->id)
+                ->latest()
+                ->limit(5)
+                ->get(['role', 'content', 'session_id', 'created_at'])
+                ->map(function (ChatMessage $message): array {
+                    return [
+                        'role' => $message->role,
+                        'content' => $message->content,
+                        'session_id' => $message->session_id,
+                        'created_at' => optional($message->created_at)->toDateTimeString(),
+                    ];
+                })
+                ->toArray();
+        }
+
         return response()->json([
             'settings' => [
                 'enable_write_tools' => $settings->enable_write_tools,
@@ -31,6 +52,7 @@ class AutomationSettingController extends Controller
                 'enabled_tool_groups' => $settings->enabled_tool_groups ?? [],
                 'system_prompt' => $settings->system_prompt,
             ],
+            'history' => $history,
         ]);
     }
 
