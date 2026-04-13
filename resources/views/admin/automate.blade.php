@@ -20,8 +20,8 @@
                     <div class="mt-auto p-2">
                         <div class="mx-auto max-w-4xl rounded-md border border-slate-200 bg-white shadow">
                             <div class="flex items-center gap-2 p-1">
-                                <button id="new-chat-button" type="button" class="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-100" title="Start New Chat">
-                                    New Chat
+                                <button id="new-chat-button" type="button" class="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 px-3 text-md font-medium text-slate-700 hover:bg-slate-100" title="Start New Chat">
+                                    <i class="fa fa-plus"></i>
                                 </button>
                                 <input
                                     id="chat-message-input"
