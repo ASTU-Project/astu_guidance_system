@@ -28,7 +28,6 @@ class DepartmentSummaryPrompt extends Prompt
             'next_actions' => [
                 'Review department capacity and remaining spots.',
                 'Verify minimum GPA rules for each department.',
-                'Add or update departments if data has changed.',
             ],
         ];
 

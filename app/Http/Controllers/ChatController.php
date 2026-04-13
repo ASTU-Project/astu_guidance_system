@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AutomationSetting;
 use App\Models\ChatMessage;
+use App\Models\Department;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,8 @@ class ChatController extends Controller
 {
     private const DEFAULT_MODEL = 'qwen-3-235b-a22b-instruct-2507';
     private const API = 'https://api.cerebras.ai/v1/chat/completions';
-    private const HISTORY_LIMIT = 10;
+    private const HISTORY_LIMIT = 5;
+    private const DEPARTMENT_CONTEXT_LIMIT = 30;
 
     public function __invoke(Request $request): JsonResponse
     {
@@ -40,40 +42,49 @@ class ChatController extends Controller
         $sessionId = $validated['session_id'] ?? (string) Str::uuid();
         $systemInstruction = $this->buildSystemInstruction($user);
         $conversationMessages = $this->buildConversationMessages($user, $sessionId, $message, $systemInstruction);
+        $enabledToolGroups = $this->getEnabledToolGroups($user);
+        $tools = $this->buildToolDefinitions($enabledToolGroups);
 
         try {
-            $response = Http::withToken($apiKey)
+            $phaseOnePayload = [
+                'model' => $model,
+                'messages' => $conversationMessages,
+                'max_completion_tokens' => 1200,
+            ];
+
+            if ($tools !== []) {
+                $phaseOnePayload['tools'] = $tools;
+                $phaseOnePayload['tool_choice'] = 'auto';
+            }
+
+            $phaseOneResponse = Http::withToken($apiKey)
                 ->withOptions([
                     // These options reduce intermittent TLS/socket reset issues on some local stacks.
                     'force_ip_resolve' => 'v4',
                     'version' => 1.1,
                 ])
-                ->connectTimeout(10)
-                ->timeout(30)
+                ->connectTimeout(8)
+                ->timeout(20)
                 ->retry(2, 400, function (\Exception $exception): bool {
                     return $exception instanceof ConnectionException;
-                })
-                ->post(self::API, [
-                    'model' => $model,
-                    'messages' => $conversationMessages,
-                    'max_completion_tokens' => 1200,
-                ]);
+                }, throw: false)
+                ->post(self::API, $phaseOnePayload);
 
-            if (! $response->successful()) {
-                $status = $response->status();
+            if (! $phaseOneResponse->successful()) {
+                $status = $phaseOneResponse->status();
                 $friendlyError = 'Unexpected API error.';
 
                 if ($status === 401) {
                     $friendlyError = 'Invalid API key.';
                 } elseif ($status === 429) {
-                    $friendlyError = 'Too many requests. Please slow down.';
+                    $friendlyError = 'AI service is busy right now (rate limited). Please wait a moment and try again.';
                 } elseif ($status >= 500) {
                     $friendlyError = 'AI service is down. Try again later.';
                 }
 
                 Log::warning('Cerebras non-success response', [
                     'status' => $status,
-                    'body' => $response->json() ?? $response->body(),
+                    'body' => $phaseOneResponse->json() ?? $phaseOneResponse->body(),
                 ]);
 
                 return response()->json([
@@ -81,7 +92,69 @@ class ChatController extends Controller
                 ], $status === 429 ? 429 : 502);
             }
 
-            $assistantMessage = $response->json('choices.0.message.content');
+            $assistantMessagePayload = $phaseOneResponse->json('choices.0.message');
+
+            if (! is_array($assistantMessagePayload)) {
+                return response()->json([
+                    'error' => 'AI response format was invalid.',
+                ], 502);
+            }
+
+            $toolCalls = is_array($assistantMessagePayload['tool_calls'] ?? null)
+                ? $assistantMessagePayload['tool_calls']
+                : [];
+
+            $assistantMessage = $assistantMessagePayload['content'] ?? '';
+
+            if ($toolCalls !== []) {
+                $toolResults = [];
+
+                foreach ($toolCalls as $call) {
+                    $toolResults[] = $this->executeToolCall($call, $enabledToolGroups);
+                }
+
+                $phaseTwoResponse = Http::withToken($apiKey)
+                    ->withOptions([
+                        'force_ip_resolve' => 'v4',
+                        'version' => 1.1,
+                    ])
+                    ->connectTimeout(8)
+                    ->timeout(20)
+                    ->retry(2, 400, function (\Exception $exception): bool {
+                        return $exception instanceof ConnectionException;
+                    }, throw: false)
+                    ->post(self::API, [
+                        'model' => $model,
+                        'messages' => array_merge($conversationMessages, [$assistantMessagePayload], $toolResults),
+                        'max_completion_tokens' => 1200,
+                    ]);
+
+                if (! $phaseTwoResponse->successful()) {
+                    $status = $phaseTwoResponse->status();
+
+                    $friendlyError = 'AI tool follow-up request failed. Please retry.';
+
+                    if ($status === 429) {
+                        $friendlyError = 'AI service is busy right now (rate limited). Please wait a moment and try again.';
+                    } elseif ($status === 401) {
+                        $friendlyError = 'Invalid API key.';
+                    } elseif ($status >= 500) {
+                        $friendlyError = 'AI service is down. Try again later.';
+                    }
+
+                    Log::warning('Cerebras phase-two non-success response', [
+                        'status' => $status,
+                        'body' => $phaseTwoResponse->json() ?? $phaseTwoResponse->body(),
+                    ]);
+
+                    return response()->json([
+                        'error' => $friendlyError,
+                    ], $status === 429 ? 429 : 502);
+                }
+
+                $assistantMessage = $phaseTwoResponse->json('choices.0.message.content');
+            }
+
             $assistantText = $this->normalizeAssistantContent($assistantMessage);
             $assistantHtml = $this->renderAssistantHtml($assistantText);
 
@@ -183,7 +256,7 @@ class ChatController extends Controller
             '- Enabled tool groups: '.$enabledGroupsText,
             '- Enable write tools: '.($settings->enable_write_tools ? 'true' : 'false'),
             '- Confirm destructive actions: '.($settings->confirm_destructive_actions ? 'true' : 'false'),
-            '- Current endpoint behavior: no tools are executed yet in this chat endpoint; provide guidance/answers only.',
+            '- Tool execution behavior: when tools are available, you may call them to get live data before answering.',
         ];
 
         if ($customPrompt !== '') {
@@ -192,6 +265,98 @@ class ChatController extends Controller
         }
 
         return implode("\n", $context);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getEnabledToolGroups(mixed $user): array
+    {
+        if ($user === null || ! isset($user->id) || ! Schema::hasTable('automation_settings')) {
+            return [];
+        }
+
+        $settings = AutomationSetting::query()->where('user_id', $user->id)->first();
+
+        if (! $settings) {
+            return [];
+        }
+
+        return is_array($settings->enabled_tool_groups) ? $settings->enabled_tool_groups : [];
+    }
+
+    /**
+     * @param array<int, string> $enabledToolGroups
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildToolDefinitions(array $enabledToolGroups): array
+    {
+        $tools = [];
+
+        if (in_array('departments', $enabledToolGroups, true)) {
+            $tools[] = [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'department_list',
+                    'description' => 'List all departments with id, name, code, min_gpa, and spot_limit.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [],
+                    ],
+                ],
+            ];
+        }
+
+        return $tools;
+    }
+
+    /**
+     * @param array<string, mixed> $call
+     * @param array<int, string> $enabledToolGroups
+     * @return array<string, string>
+     */
+    private function executeToolCall(array $call, array $enabledToolGroups): array
+    {
+        $callId = (string) ($call['id'] ?? Str::uuid());
+        $function = is_array($call['function'] ?? null) ? $call['function'] : [];
+        $functionName = (string) ($function['name'] ?? '');
+
+        $resultPayload = match ($functionName) {
+            'department_list' => $this->runDepartmentListTool($enabledToolGroups),
+            default => [
+                'error' => 'Unknown tool requested: '.$functionName,
+            ],
+        };
+
+        return [
+            'role' => 'tool',
+            'tool_call_id' => $callId,
+            'content' => json_encode($resultPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{"error":"Tool result encoding failed."}',
+        ];
+    }
+
+    /**
+     * @param array<int, string> $enabledToolGroups
+     * @return array<string, mixed>
+     */
+    private function runDepartmentListTool(array $enabledToolGroups): array
+    {
+        if (! in_array('departments', $enabledToolGroups, true)) {
+            return [
+                'error' => 'Department tool is disabled in settings.',
+            ];
+        }
+
+        $departments = Department::query()
+            ->select(['id', 'name', 'code', 'min_gpa', 'spot_limit'])
+            ->orderBy('name')
+            ->limit(self::DEPARTMENT_CONTEXT_LIMIT)
+            ->get();
+
+        return [
+            'count' => $departments->count(),
+            'departments' => $departments->toArray(),
+        ];
     }
 
     /**
