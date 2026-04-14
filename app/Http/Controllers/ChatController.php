@@ -443,15 +443,93 @@ class ChatController extends Controller
         $looksLikeList = (bool) preg_match('/\b(list|show|display|all|give me|provide)\b/', $text);
         $looksLikeDetail = (bool) preg_match('/\b(detail|details|information|info|about)\b/', $text);
         $looksLikeExplain = (bool) preg_match('/\b(explain|why|how|summari[sz]e|interpret|impact|meaning|describe)\b/', $text);
+        $mentionsDepartments = (bool) preg_match('/\bdepartment|departments\b/', $text);
+        $mentionsPolicies = (bool) preg_match('/\bpolicy|policies|rule|rules|regulation|regulations\b/', $text);
 
         // Let the LLM compose explanatory answers from tool evidence instead of returning a direct fast-path template.
         if ($looksLikeExplain) {
             return null;
         }
 
+        if ($looksLikeList && $mentionsDepartments && $mentionsPolicies) {
+            $departmentPayload = $this->runMcpTool(new DepartmentList(), $enabledToolGroups, 'departments', $user, [
+                'limit' => self::TOOL_LIST_HARD_LIMIT,
+                'sort_by' => 'name',
+                'sort_order' => 'asc',
+            ]);
+
+            if (isset($departmentPayload['error'])) {
+                return null;
+            }
+
+            $policyPayload = null;
+            if ($this->isAdminUser($user)) {
+                $policyPayload = $this->runMcpTool(new PolicyList(), $enabledToolGroups, 'policies', $user, [
+                    'limit' => self::TOOL_LIST_HARD_LIMIT,
+                    'sort_by' => 'id',
+                    'sort_order' => 'asc',
+                    'active_only' => true,
+                ]);
+
+                if (isset($policyPayload['error'])) {
+                    $policyPayload = null;
+                }
+            }
+
+            $departments = is_array($departmentPayload['departments'] ?? null) ? $departmentPayload['departments'] : [];
+            $policies = is_array($policyPayload['policies'] ?? null) ? $policyPayload['policies'] : [];
+
+            if ($departments === [] && $policies === []) {
+                return 'No departments or policies found.';
+            }
+
+            $lines = [];
+
+            if ($departments !== []) {
+                $lines[] = '## Departments';
+                foreach ($departments as $department) {
+                    if (! is_array($department) || ! isset($department['name'])) {
+                        continue;
+                    }
+
+                    $line = '- '.(string) $department['name'];
+                    if (isset($department['code'])) {
+                        $line .= ' ('.(string) $department['code'].')';
+                    }
+
+                    $lines[] = $line;
+                }
+            }
+
+            if ($policies !== []) {
+                $lines[] = '';
+                $lines[] = '## Policies';
+                foreach ($policies as $policy) {
+                    if (! is_array($policy) || ! isset($policy['title'])) {
+                        continue;
+                    }
+
+                    $line = '- **'.(string) $policy['title'].'**';
+                    if (isset($policy['category'])) {
+                        $line .= ' ('.(string) $policy['category'].')';
+                    }
+
+                    $lines[] = $line;
+                }
+            } elseif ($mentionsPolicies) {
+                $lines[] = '';
+                $lines[] = '## Policies';
+                $lines[] = '- Policy tools are only available to admin users.';
+            }
+
+            return implode("\n", $lines);
+        }
+
         if ($looksLikeList && preg_match('/\bdepartment|departments\b/', $text)) {
             $payload = $this->runMcpTool(new DepartmentList(), $enabledToolGroups, 'departments', $user, [
                 'limit' => self::TOOL_LIST_HARD_LIMIT,
+                'sort_by' => 'name',
+                'sort_order' => 'asc',
             ]);
 
             if (isset($payload['error'])) {
@@ -593,6 +671,8 @@ class ChatController extends Controller
                 'question' => $message,
                 'active_only' => true,
                 'limit' => self::TOOL_LIST_HARD_LIMIT,
+                'sort_by' => 'id',
+                'sort_order' => 'asc',
             ]);
 
             if (isset($payload['error'])) {
