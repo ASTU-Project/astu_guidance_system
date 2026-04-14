@@ -52,7 +52,7 @@ class ChatController extends Controller
 
         if (! is_string($apiKey) || trim($apiKey) === '') {
             return response()->json([
-                'error' => 'Cerebras API key is missing. Set CEREBRAS_API_KEY in .env.',
+                'error' => 'Cerebras API key is missing. Configure services.cerebras.key.',
             ], 500);
         }
 
@@ -61,7 +61,10 @@ class ChatController extends Controller
         $sessionId = $validated['session_id'] ?? (string) Str::uuid();
 
         $lockKey = $this->buildInFlightLockKey($user, $sessionId, $request->ip() ?? 'unknown');
-        if (! Cache::add($lockKey, 1, now()->addSeconds(self::IN_FLIGHT_LOCK_SECONDS))) {
+        $lock = Cache::lock($lockKey, self::IN_FLIGHT_LOCK_SECONDS);
+        $lockAcquired = $lock->get();
+
+        if (! $lockAcquired) {
             return response()->json([
                 'error' => 'A previous chat request is still processing. Please wait a moment and try again.',
                 'session_id' => $sessionId,
@@ -72,7 +75,8 @@ class ChatController extends Controller
         $systemInstruction = $this->buildSystemInstruction($user, $automationSettings);
         $conversationMessages = $this->buildConversationMessages($user, $sessionId, $message, $systemInstruction);
         $enabledToolGroups = $this->getEnabledToolGroupsFromSettings($automationSettings);
-        $enabledToolGroups = $this->applyDefaultReadToolGroups($enabledToolGroups);
+        $enabledToolGroups = $this->applyDefaultReadToolGroups($enabledToolGroups, $user);
+        $enabledToolGroups = $this->filterToolGroupsForUser($enabledToolGroups, $user);
         $tools = $this->buildToolDefinitions($enabledToolGroups, $user);
         $toolingMessages = $conversationMessages;
 
@@ -183,6 +187,9 @@ class ChatController extends Controller
             }
 
             $assistantText = $this->normalizeAssistantContent($finalAssistantMessage);
+            if (trim($assistantText) === '') {
+                $assistantText = 'I could not generate a complete response. Please retry your request.';
+            }
             $assistantHtml = $this->renderAssistantHtml($assistantText);
 
             if ($user !== null && Schema::hasTable('chat_messages')) {
@@ -223,7 +230,9 @@ class ChatController extends Controller
                 'error' => 'Unable to complete chat request.',
             ], 500);
         } finally {
-            Cache::forget($lockKey);
+            if ($lockAcquired) {
+                $lock->release();
+            }
         }
     }
 
@@ -419,13 +428,34 @@ class ChatController extends Controller
      * @param array<int, string> $groups
      * @return array<int, string>
      */
-    private function applyDefaultReadToolGroups(array $groups): array
+    private function applyDefaultReadToolGroups(array $groups, mixed $user): array
     {
         if ($groups !== []) {
             return $groups;
         }
 
-        return ['departments', 'students', 'policies'];
+        if ($this->isAdminUser($user)) {
+            return ['departments', 'students', 'policies'];
+        }
+
+        return ['departments'];
+    }
+
+    /**
+     * Remove tool groups the current user cannot access to prevent confusing tool-disabled behavior.
+     *
+     * @param array<int, string> $groups
+     * @return array<int, string>
+     */
+    private function filterToolGroupsForUser(array $groups, mixed $user): array
+    {
+        $groups = array_values(array_unique($groups));
+
+        if ($this->isAdminUser($user)) {
+            return $groups;
+        }
+
+        return array_values(array_filter($groups, static fn (string $group): bool => $group === 'departments'));
     }
 
     private function getAutomationSettings(mixed $user): ?AutomationSetting
@@ -444,10 +474,49 @@ class ChatController extends Controller
         $looksLikeDetail = (bool) preg_match('/\b(detail|details|information|info|about)\b/', $text);
         $looksLikeExplain = (bool) preg_match('/\b(explain|why|how|summari[sz]e|interpret|impact|meaning|describe)\b/', $text);
         $mentionsDepartments = (bool) preg_match('/\bdepartment|departments\b/', $text);
-        $mentionsPolicies = (bool) preg_match('/\bpolicy|policies|rule|rules|regulation|regulations\b/', $text);
+        $mentionsPolicies = (bool) preg_match('/\b(policy|policies|policys|rule|rules|regulation|regulations)\b/', $text);
+        $requestedPolicyId = $this->extractRequestedPolicyId($message);
+        $hasExplicitPolicyIdRequest = $requestedPolicyId !== null;
+
+        if ($looksLikeExplain && $mentionsPolicies && ! $hasExplicitPolicyIdRequest) {
+            $payload = $this->runMcpTool(new PolicyList(), $enabledToolGroups, 'policies', $user, [
+                'question' => $message,
+                'active_only' => true,
+                'limit' => 8,
+                'sort_by' => 'updated_at',
+                'sort_order' => 'desc',
+            ]);
+
+            if (! isset($payload['error'])) {
+                $policies = is_array($payload['policies'] ?? null) ? $payload['policies'] : [];
+
+                if ($policies !== []) {
+                    $lines = ['## Policy explanation (grounded)'];
+                    $lines[] = 'Based on current policy records, here are the key rules:';
+                    $lines[] = '';
+
+                    foreach ($policies as $policy) {
+                        if (! is_array($policy) || ! isset($policy['title'])) {
+                            continue;
+                        }
+
+                        $lines[] = '- **'.(string) $policy['title'].'** ('.(string) ($policy['category'] ?? 'General').')';
+
+                        if (isset($policy['content']) && is_string($policy['content'])) {
+                            $lines[] = '  - '.Str::limit($policy['content'], 220);
+                        }
+                    }
+
+                    $lines[] = '';
+                    $lines[] = 'If you want, ask for a specific policy id (for example: "explain policy 1") for full detail.';
+
+                    return implode("\n", $lines);
+                }
+            }
+        }
 
         // Let the LLM compose explanatory answers from tool evidence instead of returning a direct fast-path template.
-        if ($looksLikeExplain) {
+        if ($looksLikeExplain && ! $hasExplicitPolicyIdRequest) {
             return null;
         }
 
@@ -636,9 +705,45 @@ class ChatController extends Controller
             return implode("\n", $lines);
         }
 
-        if (preg_match('/\bpolicy|policies|rule|rules|regulation|regulations\b/', $text)) {
-            if (preg_match('/\bpolicy\s*#?\s*(\d+)\b/i', $message, $idMatch)) {
-                $policyId = (int) ($idMatch[1] ?? 0);
+        $looksLikeStudentCgpaFilter = (bool) preg_match('/\b(cgpa|gpa)\b/', $text)
+            && (bool) preg_match('/\bstudent|students|sstudent|sstudents\b/', $text);
+        if ($looksLikeStudentCgpaFilter) {
+            $minCgpa = $this->extractRequestedMinCgpa($message);
+
+            if ($minCgpa !== null) {
+                $payload = $this->runMcpTool(new StudentList(), $enabledToolGroups, 'students', $user, [
+                    'min_cgpa' => $minCgpa,
+                    'sort_by' => 'cgpa',
+                    'sort_order' => 'desc',
+                    'limit' => self::TOOL_LIST_HARD_LIMIT,
+                ]);
+
+                if (isset($payload['error'])) {
+                    return null;
+                }
+
+                $students = is_array($payload['students'] ?? null) ? $payload['students'] : [];
+                if ($students === []) {
+                    return 'No students found for CGPA >= '.$minCgpa.'.';
+                }
+
+                $lines = ['## Students with CGPA >= '.$minCgpa.' ('.count($students).')'];
+                foreach ($students as $student) {
+                    if (! is_array($student) || ! isset($student['name'], $student['student_id'])) {
+                        continue;
+                    }
+
+                    $cgpa = isset($student['cgpa']) ? (string) $student['cgpa'] : '—';
+                    $lines[] = '- '.(string) $student['name'].' ('.(string) $student['student_id'].') - CGPA: '.$cgpa;
+                }
+
+                return implode("\n", $lines);
+            }
+        }
+
+        if (preg_match('/\b(policy|policies|policys|rule|rules|regulation|regulations)\b/', $text)) {
+            if ($requestedPolicyId !== null) {
+                $policyId = $requestedPolicyId;
 
                 if ($policyId > 0) {
                     $detailPayload = $this->runMcpTool(new PolicyList(), $enabledToolGroups, 'policies', $user, [
@@ -1082,5 +1187,33 @@ class ChatController extends Controller
         }
 
         return self::FAST_PATH_STUDENT_DEFAULT_LIMIT;
+    }
+
+    private function extractRequestedMinCgpa(string $message): ?float
+    {
+        if (preg_match('/\b(?:more than|greater than|above|over|at least|min(?:imum)?|>=|>)\s*(\d(?:\.\d{1,2})?)\b/i', $message, $matches)) {
+            $value = (float) ($matches[1] ?? 0);
+
+            return max(0.0, min(4.0, $value));
+        }
+
+        if (preg_match('/\b(\d(?:\.\d{1,2})?)\s*(?:\+)?\s*(?:cgpa|gpa)\b/i', $message, $matches)) {
+            $value = (float) ($matches[1] ?? 0);
+
+            return max(0.0, min(4.0, $value));
+        }
+
+        return null;
+    }
+
+    private function extractRequestedPolicyId(string $message): ?int
+    {
+        if (preg_match('/\b(?:policy|policies|policys|rule|rules|regulation|regulations)\s*#?\s*(\d+)\b/i', $message, $matches)) {
+            $policyId = (int) ($matches[1] ?? 0);
+
+            return $policyId > 0 ? $policyId : null;
+        }
+
+        return null;
     }
 }
