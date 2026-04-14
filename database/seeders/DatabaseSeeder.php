@@ -3,7 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\Department;
+use App\Models\Grade;
 use App\Models\Student;
+use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -27,10 +29,14 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        Grade::query()->delete();
+        Subject::query()->delete();
         Student::query()->delete();
         User::query()->where('id', '!=', $testUser->id)->delete();
+        Department::query()->delete();
 
         Student::factory(50)->create();
+        $this->call(\Database\Seeders\AcademicRecordSeeder::class);
         Department::factory(8)->create();
     }
 }

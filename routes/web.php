@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\StudentLoginController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\Student\ProfileController as StudentProfileController;
+use App\Http\Controllers\Student\StatusController as StudentStatusController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -81,6 +82,8 @@ Route::middleware(['auth:student'])->group(function () {
     Route::get('/student/dashboard', function () {
         return view('student.dashboard');
     })->name('student.dashboard');
+
+    Route::get('/student/status', [StudentStatusController::class, 'index'])->name('student.status');
 
     Route::get('/student/profile', [StudentProfileController::class, 'edit'])->name('student.profile.edit');
     Route::put('/student/profile', [StudentProfileController::class, 'updateProfile'])->name('student.profile.update');

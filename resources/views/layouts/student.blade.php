@@ -39,25 +39,9 @@
                     <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="{{ route('student.dashboard') }}" class="nav-item {{ request()->routeIs('student.dashboard') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="{{ route('student.dashboard') }}" class="nav-item {{ request()->routeIs('student.dashboard') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="{{ route('student.dashboard') }}" class="nav-item {{ request()->routeIs('student.dashboard') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="{{ route('student.dashboard') }}" class="nav-item {{ request()->routeIs('student.dashboard') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="{{ route('student.dashboard') }}" class="nav-item {{ request()->routeIs('student.dashboard') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
-                    <span>Dashboard</span>
+                <a href="{{ route('student.status') }}" class="nav-item {{ request()->routeIs('student.status') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-graduation-cap w-4 text-center text-xs"></i>
+                    <span>Academic Status</span>
                 </a>
                 <a href="{{ route('student.profile.edit') }}" class="nav-item {{ request()->routeIs('student.profile.*') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
                     <i class="fa-solid fa-user w-4 text-center text-xs"></i>
