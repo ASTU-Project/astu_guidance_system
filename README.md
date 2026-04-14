@@ -1,118 +1,109 @@
 # ASTU Management System
 
-A Laravel-based university management system with a Blade admin panel for student, department, and dashboard operations.
+ASTU Management System is a university management platform for handling student records, departments, academic status tracking, schedules, and admin automation workflows.
 
-## Current Project Progress
+## Purpose
 
-### Completed
-- Admin UI migrated to Blade views with shared admin layout.
-- Public pages in Blade (`welcome`, `login`) are active.
-- Dashboard route uses controller-driven stats.
-- Dashboard overview cards show live values (students, departments, events, year).
-- Students page has:
-	- Server-side search by name or student ID.
-	- Department and year filters.
-	- Query-preserving pagination.
-- Department management page has:
-	- Directory table with capacity/load visualization.
-	- Popup modal form to add a new department.
-	- Department creation validation and success feedback.
-- Calendar management now has:
-	- Calendar base list page with modal form to create a base (department, semester, section, min GPA input).
-	- Event page per base with weekly preview and 10-minute slot grid.
-	- Event create form wired to database.
-	- Support for both recurring weekly events and specific-date events (`event_date` nullable logic).
-	- Event color picker with restricted palette and persisted selection.
-	- Validation old-input restore for failed submissions.
-	- Click-to-edit popup modal wired to update event records.
-- Automation chat now has:
-	- Direct AI chat flow for admins.
-	- Session-based conversation memory.
-	- Saved user automation settings and recent chat history.
-	- Reload protection and draft/session restore in the browser.
-	- New Chat reset for starting a fresh conversation.
-- Data setup includes student factory-based seeding for test data.
-- Core models prepared with fillable/casts and relations for major entities.
+This project is designed to help academic staff and students manage core campus activities in one place.
 
-### In Progress / Next
-- Add edit/delete actions for department records.
-- Add delete flow for calendar events.
-- Improve calendar preview to render overlapping events in the same slot.
-- Add CRUD pages for additional admin modules (subjects, grades).
-- Improve dashboard analytics to be fully data-driven (messages/graphs from DB).
-- Add feature tests for auth-protected admin flows.
-- Expand automation chat with tool execution if needed later.
+- Manage student and department information
+- Organize calendar events and schedules
+- Track student academic progress by year and semester
+- Support admin-side automation chat and settings
 
-## Main Modules
-- Authentication (`/login`, `/logout`)
-- Admin dashboard (`/admin/dashboard`)
-- Students management (`/admin/students`)
-- Departments management (`/admin/departments`)
-- Calendar management (`/admin/calendar`, `/admin/calendar/Events/{id}`)
-- Other admin modules: map, policy, automate
+## Main Areas
 
-## Calendar Routes
+### 1. Authentication
 
-- `GET /admin/calendar` -> list event bases
-- `POST /admin/calendar` -> create event base
-- `GET /admin/calendar/Events/{id}` -> open events page for one base
-- `POST /admin/calendar/Events/{id}` -> create event under base
-- `PUT /admin/calendar/Events/{id}/{event}` -> update event
+- Secure login and logout flow
+- Access control for protected admin pages
 
-## Calendar Data Rules
+### 2. Admin Dashboard
 
-- `event_date` filled: event is treated as one-time (specific date).
-- `event_date` empty: event is treated as recurring weekly using `day`.
-- When `event_date` is provided, backend derives `day` from the date.
+- Overview cards for key academic entities
+- Quick access to major management pages
 
-## Automation Chat
+### 3. Students Management
 
-The admin automation page is now a working chat interface that sends a message to the backend, forwards it to Cerebras AI, and shows the response in the browser.
+- Student listing with search and filters
+- Student profile and academic-focused views
 
-### Main Routes
+### 4. Departments Management
 
-- `GET /admin/automate` -> open the chat page
-- `POST /admin/automate/chat` -> send a chat message to the AI controller
-- `GET /admin/automation-settings` -> load saved chat settings and recent history
-- `PUT /admin/automation-settings` -> save chat settings
+- Department directory and capacity overview
+- Department creation and validation feedback
 
-### What the chat does
+### 5. Academic Status (Student Side)
 
-- Keeps a session id so the conversation continues across messages.
-- Stores user and assistant messages in the database.
-- Loads user automation settings into the AI prompt.
-- Saves the draft and visible chat thread in the browser so reloads do not wipe the screen.
-- Lets the user start a new chat with a clean session.
+- Semester GPA and cumulative GPA summary
+- Ranking and percentile display by cohort
+- Yearly trend and subject performance charts
+- Semester-separated mark panels across available years
 
+### 6. Calendar Management
 
-## Tech Stack
-- Laravel 13
-- Blade templates
-- Eloquent ORM
-- Tailwind CSS
-- Cerebras AI chat completions API
+- Calendar base creation by academic grouping
+- Event management for recurring and specific-date schedules
+- Edit support for existing event entries
 
-## Setup
+### 7. Automation Chat
 
-```bash
-composer install
-npm install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate
-php artisan db:seed
-npm run dev
-php artisan serve
-```
+- Admin chat workflow for assistant-driven tasks
+- Session memory and recent history support
+- Saved user automation preferences
 
-## Default Test Account
+## Academic Status Overview
 
-The seeder creates a test account:
+The academic status page is built to present student performance in a clear and practical way.
 
-- Email: `test@example.com`
-- Password: `password`
+- Supports Sem 1 and Sem 2 structure
+- Works with multiple academic years
+- Uses weighted GPA calculation based on subject credit hours
+- Shows rank, percentile, and standing labels
 
-## Notes
-- Admin routes are protected by `auth` middleware.
-- Students and departments data are now displayed from live database values.
-- The automation chat uses `chat_messages` and `automation_settings` tables to persist session state and user preferences.
+For a full logic document, see: docs/academic-status-logic.md
+
+## Getting Started
+
+1. Install project dependencies.
+2. Configure your environment file.
+3. Run migrations and seed data.
+4. Start the application and frontend build.
+
+Typical commands:
+
+- composer install
+- npm install
+- cp .env.example .env
+- php artisan key:generate
+- php artisan migrate
+- php artisan db:seed
+- npm run dev
+- php artisan serve
+
+## Default Seed Account
+
+If seed data is enabled, the project includes a basic test account:
+
+- Email: test@example.com
+- Password: password
+
+## Project Status
+
+Current state of the project:
+
+- Core modules are operational
+- Student academic status flow is active and controller-driven
+- Admin calendar and automation pages are available
+
+Planned improvements:
+
+- Additional CRUD completeness in some admin modules
+- More tests for critical flows
+- Continued UI and reporting enhancements
+
+## Maintainers Notes
+
+- Keep academic rules aligned with ASTU semester policy (two-semester structure).
+- Keep controller logic as the source of truth for calculations.
+- Keep Blade templates focused on rendering prepared data.
