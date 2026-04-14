@@ -12,10 +12,12 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tool;
 
 #[Name('student.list')]
-#[Description('List/search students. Supports optional filters + pagination to avoid large payloads.')]
+#[Description('List, filter, and rank students. For list-all requests, omit q and set limit directly. For ranking requests (for example top 10 by score in year 1), use study_year + sort_by=cgpa + sort_order=desc + limit=10. current_year/study_year is academic level 1-5, not a calendar year.')]
 class StudentList extends Tool
 {
-    private const MAX_LIMIT = 25;
+    private const MAX_LIMIT = 100;
+    private const ALLOWED_SORT_BY = ['id', 'cgpa', 'current_year', 'name'];
+    private const ALLOWED_SORT_ORDER = ['asc', 'desc'];
 
     private function param(Request $request, string $key, mixed $default = null): mixed
     {
@@ -55,10 +57,23 @@ class StudentList extends Tool
 
         $q = trim((string) $this->param($request, 'q', ''));
         $department = trim((string) $this->param($request, 'department', ''));
+        $studyYear = $this->param($request, 'study_year');
         $minCgpa = $this->param($request, 'min_cgpa');
         $cursorId = $this->param($request, 'cursor_id');
+        $sortBy = strtolower(trim((string) $this->param($request, 'sort_by', 'id')));
+        $sortOrder = strtolower(trim((string) $this->param($request, 'sort_order', 'asc')));
         $limit = (int) $this->param($request, 'limit', 10);
         $limit = max(1, min(self::MAX_LIMIT, $limit));
+
+        if (! in_array($sortBy, self::ALLOWED_SORT_BY, true)) {
+            $sortBy = 'id';
+        }
+
+        if (! in_array($sortOrder, self::ALLOWED_SORT_ORDER, true)) {
+            $sortOrder = 'asc';
+        }
+
+        $cursorEnabled = $sortBy === 'id';
 
         $query = Student::query()
             ->select([
@@ -70,10 +85,9 @@ class StudentList extends Tool
                 'current_year',
                 'current_section',
                 'cgpa',
-            ])
-            ->orderBy('id', 'asc');
+            ]);
 
-        if ($cursorId !== null && is_numeric($cursorId)) {
+        if ($cursorEnabled && $cursorId !== null && is_numeric($cursorId)) {
             $query->where('id', '>', (int) $cursorId);
         }
 
@@ -88,13 +102,23 @@ class StudentList extends Tool
             $query->where('department', $department);
         }
 
+        if ($studyYear !== null && is_numeric($studyYear)) {
+            $query->where('current_year', (int) $studyYear);
+        }
+
         if ($minCgpa !== null && is_numeric($minCgpa)) {
             $query->where('cgpa', '>=', (float) $minCgpa);
         }
 
-        $rows = $query->limit($limit + 1)->get();
+        if ($sortBy === 'cgpa') {
+            $query->orderByRaw('cgpa IS NULL');
+        }
 
-        $hasMore = $rows->count() > $limit;
+        $query->orderBy($sortBy, $sortOrder)->orderBy('id', 'asc');
+
+        $rows = $query->limit($cursorEnabled ? ($limit + 1) : $limit)->get();
+
+        $hasMore = $cursorEnabled ? ($rows->count() > $limit) : false;
         $students = $rows->take($limit)->map(function (Student $student): array {
             return [
                 'id' => $student->id,
@@ -108,14 +132,21 @@ class StudentList extends Tool
         })->values();
 
         $nextCursorId = null;
-        if ($hasMore && $students->isNotEmpty()) {
+        if ($cursorEnabled && $hasMore && $students->isNotEmpty()) {
             $nextCursorId = $students->last()['id'] ?? null;
         }
 
         return Response::json([
             'students' => $students->toArray(),
             'count' => $students->count(),
+            'has_more' => $hasMore,
             'next_cursor_id' => $nextCursorId,
+            'query_meta' => [
+                'sort_by' => $sortBy,
+                'sort_order' => $sortOrder,
+                'study_year' => is_numeric($studyYear) ? (int) $studyYear : null,
+                'cursor_enabled' => $cursorEnabled,
+            ],
         ]);
     }
 
@@ -125,15 +156,14 @@ class StudentList extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'type' => 'object',
-            'properties' => [
-                'q' => ['type' => 'string', 'description' => 'Search by name or student_id.'],
-                'department' => ['type' => 'string', 'description' => 'Filter by department name/code as stored.'],
-                'min_cgpa' => ['type' => 'number', 'description' => 'Minimum CGPA filter.'],
-                'limit' => ['type' => 'integer', 'description' => 'Max rows to return (1-25). Defaults to 10.'],
-                'cursor_id' => ['type' => 'integer', 'description' => 'Return rows with id > cursor_id (pagination).'],
-            ],
-            'additionalProperties' => false,
+            'q' => $schema->string()->description('Optional search term (name or student_id). Leave empty to list all students.'),
+            'department' => $schema->string()->description('Optional exact department filter (as stored in DB).'),
+            'study_year' => $schema->integer()->description('Academic year level filter (1-5). This is not a calendar year.'),
+            'min_cgpa' => $schema->number()->description('Minimum CGPA filter.'),
+            'sort_by' => $schema->string()->description('Sort field: id, cgpa, current_year, or name. Use sort_by=cgpa for score ranking.'),
+            'sort_order' => $schema->string()->description('Sort direction: asc or desc. Use desc for top scores.'),
+            'limit' => $schema->integer()->description('Rows to return (1-100). For "list 50 students", set limit=50 and omit q.'),
+            'cursor_id' => $schema->integer()->description('Pagination cursor (supported when sort_by=id). Return rows with id > cursor_id until next_cursor_id is null.'),
         ];
     }
 

@@ -132,16 +132,37 @@
                     <h1 class="text-sm font-semibold text-slate-800">@yield('page-title', 'Dashboard')</h1>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="text-xs text-slate-500 hidden sm:block">
-                        @php
-                            $name = auth('web')->user()?->name ?? 'admin';
-                            $firstName = explode(' ', trim($name))[0] ?: 'admin';
-                            $initial = strtoupper(substr($firstName, 0, 1));
-                        @endphp
-
-                        <a href="{{ route('admin.profile.edit') }}" class="bg-slate-900 font-bold p-2 px-3 rounded-full text-white">
-                            {{ $initial }}
-                        </a>
+                    @if(request()->routeIs('admin.automate'))
+                        <button
+                            type="button"
+                            onclick="if (typeof openToolsModal === 'function') openToolsModal();"
+                            class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                            title="Tools Settings"
+                            aria-label="Tools Settings"
+                        >
+                            <i class="fa fa-gear text-xs"></i>
+                        </button>
+                    @endif
+                    <span class="text-xs text-slate-500 hidden sm:block gap-4 flex items-center">
+                        <span class="text-slate-700 font-medium">
+                            @php
+                                $name = auth()->user()->name ?? 'Guest';
+                                $name = explode(' ', $name)[0];
+                            @endphp
+                            <a href="{{ route('admin.profile.edit') }}" class="bg-slate-900 font-bold p-2 px-3 rounded-full text-white">
+                                {{ $name[0] }}
+                            </a>
+                        </span>
+                    </span>
+                    <span class="text-xs text-slate-400">
+                        <form action="{{route('logout')}}" method="POST" class="flex items-center justify-between text-[15px] font-semibold text-slate-400 ">
+                            @csrf
+                            <button type="submit" class="text-[15px] font-semibold text-slate-400">
+                                <span class="">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                </span>
+                            </button>
+                        </form>
                     </span>
                 </div>
             </header>

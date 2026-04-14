@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mcp\Tools\DepartmentList;
+use App\Mcp\Tools\PolicyList;
 use App\Mcp\Tools\StudentList;
 use App\Models\AutomationSetting;
 use App\Models\ChatMessage;
@@ -35,6 +36,8 @@ class ChatController extends Controller
     private const HISTORY_MESSAGE_CHAR_LIMIT = 700;
     private const TOOL_RESULT_CHAR_BUDGET = 20000;
     private const TOOL_LIST_HARD_LIMIT = 25;
+    private const STUDENT_TOOL_LIST_HARD_LIMIT = 100;
+    private const FAST_PATH_STUDENT_DEFAULT_LIMIT = 10;
     private const IN_FLIGHT_LOCK_SECONDS = 10;
 
     public function __invoke(Request $request): JsonResponse
@@ -357,6 +360,7 @@ class ChatController extends Controller
             'Data grounding rules (critical):',
             '- Never invent or autocomplete real data (departments, students, counts, IDs, CGPA, etc.).',
             '- If the user asks to list/search departments or students (or any question requiring live records), you MUST call the appropriate tool and answer ONLY from its result.',
+            '- Student current_year means academic level (1-5), not calendar year.',
             '- If tools are unavailable/disabled or return an error, say you cannot access the live data instead of guessing.',
             'Response protocol (token-efficient):',
             '- Start directly with the answer; no long preamble.',
@@ -421,7 +425,7 @@ class ChatController extends Controller
             return $groups;
         }
 
-        return ['departments', 'students'];
+        return ['departments', 'students', 'policies'];
     }
 
     private function getAutomationSettings(mixed $user): ?AutomationSetting
@@ -438,6 +442,12 @@ class ChatController extends Controller
         $text = mb_strtolower($message);
         $looksLikeList = (bool) preg_match('/\b(list|show|display|all|give me|provide)\b/', $text);
         $looksLikeDetail = (bool) preg_match('/\b(detail|details|information|info|about)\b/', $text);
+        $looksLikeExplain = (bool) preg_match('/\b(explain|why|how|summari[sz]e|interpret|impact|meaning|describe)\b/', $text);
+
+        // Let the LLM compose explanatory answers from tool evidence instead of returning a direct fast-path template.
+        if ($looksLikeExplain) {
+            return null;
+        }
 
         if ($looksLikeList && preg_match('/\bdepartment|departments\b/', $text)) {
             $payload = $this->runMcpTool(new DepartmentList(), $enabledToolGroups, 'departments', $user, [
@@ -519,8 +529,9 @@ class ChatController extends Controller
         }
 
         if ($looksLikeList && preg_match('/\bstudent|students\b/', $text)) {
+            $requestedLimit = $this->extractRequestedStudentLimit($message);
             $payload = $this->runMcpTool(new StudentList(), $enabledToolGroups, 'students', $user, [
-                'limit' => min(10, self::TOOL_LIST_HARD_LIMIT),
+                'limit' => $requestedLimit,
             ]);
 
             if (isset($payload['error'])) {
@@ -532,15 +543,78 @@ class ChatController extends Controller
                 return "No students found.";
             }
 
-            $lines = ["## Students (sample)"];
+            $lines = ['## Students ('.count($students).')'];
             foreach ($students as $student) {
                 if (is_array($student) && isset($student['name'], $student['student_id'])) {
                     $lines[] = '- '.(string) $student['name'].' ('.(string) $student['student_id'].')';
                 }
             }
 
-            $lines[] = '';
-            $lines[] = 'Tip: ask like "search student Bilal" to narrow it down.';
+            if ($requestedLimit >= self::STUDENT_TOOL_LIST_HARD_LIMIT) {
+                $lines[] = '';
+                $lines[] = 'Note: Student list is capped at '.self::STUDENT_TOOL_LIST_HARD_LIMIT.' records per request.';
+            }
+
+            return implode("\n", $lines);
+        }
+
+        if (preg_match('/\bpolicy|policies|rule|rules|regulation|regulations\b/', $text)) {
+            if (preg_match('/\bpolicy\s*#?\s*(\d+)\b/i', $message, $idMatch)) {
+                $policyId = (int) ($idMatch[1] ?? 0);
+
+                if ($policyId > 0) {
+                    $detailPayload = $this->runMcpTool(new PolicyList(), $enabledToolGroups, 'policies', $user, [
+                        'id' => $policyId,
+                        'active_only' => false,
+                        'limit' => 1,
+                    ]);
+
+                    if (! isset($detailPayload['error'])) {
+                        $matches = is_array($detailPayload['policies'] ?? null) ? $detailPayload['policies'] : [];
+                        if (count($matches) === 1 && is_array($matches[0])) {
+                            $policy = $matches[0];
+                            $lines = ['## Policy #'.$policyId];
+                            $lines[] = '- **Title**: '.(string) ($policy['title'] ?? '—');
+                            $lines[] = '- **Category**: '.(string) ($policy['category'] ?? 'General');
+                            $lines[] = '- **Status**: '.((bool) ($policy['is_active'] ?? false) ? 'Active' : 'Inactive');
+                            $lines[] = '';
+                            $lines[] = '### Content';
+                            $lines[] = (string) ($policy['content'] ?? 'No content available.');
+
+                            return implode("\n", $lines);
+                        }
+                    }
+
+                    return 'Policy #'.$policyId.' was not found.';
+                }
+            }
+
+            $payload = $this->runMcpTool(new PolicyList(), $enabledToolGroups, 'policies', $user, [
+                'question' => $message,
+                'active_only' => true,
+                'limit' => self::TOOL_LIST_HARD_LIMIT,
+            ]);
+
+            if (isset($payload['error'])) {
+                return null;
+            }
+
+            $policies = is_array($payload['policies'] ?? null) ? $payload['policies'] : [];
+            if ($policies === []) {
+                return 'No matching policies found.';
+            }
+
+            $lines = ['## Relevant policies'];
+            foreach ($policies as $policy) {
+                if (! is_array($policy) || ! isset($policy['title'])) {
+                    continue;
+                }
+
+                $lines[] = '- **'.(string) $policy['title'].'** ('.(string) ($policy['category'] ?? 'General').')';
+                if (isset($policy['content']) && is_string($policy['content'])) {
+                    $lines[] = '  - '.Str::limit($policy['content'], 180);
+                }
+            }
 
             return implode("\n", $lines);
         }
@@ -561,12 +635,14 @@ class ChatController extends Controller
                 'type' => 'function',
                 'function' => [
                     'name' => 'department_list',
-                    'description' => 'Fetch REAL departments from the database. Use this whenever listing/searching departments. Never guess department names.',
+                    'description' => 'Fetch REAL departments from the database. For list-all requests omit q. For sorted output set sort_by + sort_order. Use cursor_id pagination when sort_by=id.',
                     'parameters' => [
                         'type' => 'object',
                         'properties' => [
                             'q' => ['type' => 'string', 'description' => 'Search by department name or code.'],
-                            'limit' => ['type' => 'integer', 'description' => 'Max rows to return (1-25).'],
+                            'sort_by' => ['type' => 'string', 'description' => 'Sort field: id, name, code, min_gpa, or spot_limit.'],
+                            'sort_order' => ['type' => 'string', 'description' => 'Sort direction: asc or desc.'],
+                            'limit' => ['type' => 'integer', 'description' => 'Max rows to return (1-100).'],
                             'cursor_id' => ['type' => 'integer', 'description' => 'Pagination cursor; returns rows with id > cursor_id.'],
                         ],
                         'additionalProperties' => false,
@@ -580,14 +656,42 @@ class ChatController extends Controller
                 'type' => 'function',
                 'function' => [
                     'name' => 'student_list',
-                    'description' => 'Fetch REAL students from the database. Use this whenever listing/searching students. Never guess student data.',
+                    'description' => 'Fetch REAL students from the database. For list-all requests omit q and set limit. For ranking questions (top/highest score), use study_year with sort_by=cgpa and sort_order=desc.',
                     'parameters' => [
                         'type' => 'object',
                         'properties' => [
                             'q' => ['type' => 'string', 'description' => 'Search by name or student_id.'],
                             'department' => ['type' => 'string', 'description' => 'Filter by department.'],
+                            'study_year' => ['type' => 'integer', 'description' => 'Academic year level filter (1-5), not a calendar year.'],
                             'min_cgpa' => ['type' => 'number', 'description' => 'Minimum CGPA filter.'],
-                            'limit' => ['type' => 'integer', 'description' => 'Max rows to return (1-25).'],
+                            'sort_by' => ['type' => 'string', 'description' => 'Sort field: id, cgpa, current_year, or name.'],
+                            'sort_order' => ['type' => 'string', 'description' => 'Sort direction: asc or desc.'],
+                            'limit' => ['type' => 'integer', 'description' => 'Max rows to return (1-100).'],
+                            'cursor_id' => ['type' => 'integer', 'description' => 'Pagination cursor; returns rows with id > cursor_id.'],
+                        ],
+                        'additionalProperties' => false,
+                    ],
+                ],
+            ];
+        }
+
+        if (in_array('policies', $enabledToolGroups, true) && $this->isAdminUser($user)) {
+            $tools[] = [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'policy_list',
+                    'description' => 'Fetch REAL policy records. Use id for specific policy detail, question for relevance matching, and sort_by/sort_order for deterministic ordering.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'q' => ['type' => 'string', 'description' => 'Search by title/category/content.'],
+                            'id' => ['type' => 'integer', 'description' => 'Fetch a specific policy by id.'],
+                            'question' => ['type' => 'string', 'description' => 'Original student question for relevance filtering.'],
+                            'category' => ['type' => 'string', 'description' => 'Exact category filter.'],
+                            'active_only' => ['type' => 'boolean', 'description' => 'Return only active policies. Defaults true.'],
+                            'sort_by' => ['type' => 'string', 'description' => 'Sort field: id, updated_at, title, or category.'],
+                            'sort_order' => ['type' => 'string', 'description' => 'Sort direction: asc or desc.'],
+                            'limit' => ['type' => 'integer', 'description' => 'Max rows to return (1-100).'],
                             'cursor_id' => ['type' => 'integer', 'description' => 'Pagination cursor; returns rows with id > cursor_id.'],
                         ],
                         'additionalProperties' => false,
@@ -628,6 +732,20 @@ class ChatController extends Controller
             ];
         }
 
+        if (in_array('students', $enabledToolGroups, true) && $this->isAdminUser($user) && preg_match('/\b(top|highest|lowest|best|rank|ranking|score|cgpa|gpa)\b/', $text)) {
+            return [
+                'type' => 'function',
+                'function' => ['name' => 'student_list'],
+            ];
+        }
+
+        if (in_array('policies', $enabledToolGroups, true) && $this->isAdminUser($user) && preg_match('/\bpolicy|policies|rule|rules|regulation|regulations\b/', $text)) {
+            return [
+                'type' => 'function',
+                'function' => ['name' => 'policy_list'],
+            ];
+        }
+
         return 'auto';
     }
 
@@ -649,6 +767,7 @@ class ChatController extends Controller
         $resultPayload = match ($functionName) {
             'department_list' => $this->runMcpTool(new DepartmentList(), $enabledToolGroups, 'departments', $user, $args),
             'student_list' => $this->runMcpTool(new StudentList(), $enabledToolGroups, 'students', $user, $args),
+            'policy_list' => $this->runMcpTool(new PolicyList(), $enabledToolGroups, 'policies', $user, $args),
             default => [
                 'error' => 'Unknown tool requested: '.$functionName,
             ],
@@ -672,13 +791,18 @@ class ChatController extends Controller
     private function compactToolResult(array $payload): array
     {
         if (isset($payload['students']) && is_array($payload['students'])) {
-            $payload['students'] = array_slice($payload['students'], 0, self::TOOL_LIST_HARD_LIMIT);
+            $payload['students'] = array_slice($payload['students'], 0, self::STUDENT_TOOL_LIST_HARD_LIMIT);
             $payload['count'] = isset($payload['count']) ? (int) $payload['count'] : count($payload['students']);
         }
 
         if (isset($payload['departments']) && is_array($payload['departments'])) {
             $payload['departments'] = array_slice($payload['departments'], 0, self::TOOL_LIST_HARD_LIMIT);
             $payload['count'] = isset($payload['count']) ? (int) $payload['count'] : count($payload['departments']);
+        }
+
+        if (isset($payload['policies']) && is_array($payload['policies'])) {
+            $payload['policies'] = array_slice($payload['policies'], 0, self::TOOL_LIST_HARD_LIMIT);
+            $payload['count'] = isset($payload['count']) ? (int) $payload['count'] : count($payload['policies']);
         }
 
         $encoded = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -867,5 +991,16 @@ class ChatController extends Controller
 
         // Fallback for projects without explicit role schema yet.
         return (int) $user->id === 1;
+    }
+
+    private function extractRequestedStudentLimit(string $message): int
+    {
+        if (preg_match('/\b(\d{1,3})\s+students?\b/i', $message, $matches)) {
+            $requested = (int) ($matches[1] ?? self::FAST_PATH_STUDENT_DEFAULT_LIMIT);
+
+            return max(1, min(self::STUDENT_TOOL_LIST_HARD_LIMIT, $requested));
+        }
+
+        return self::FAST_PATH_STUDENT_DEFAULT_LIMIT;
     }
 }
