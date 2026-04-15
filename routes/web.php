@@ -85,6 +85,26 @@ Route::middleware(['auth:student'])->group(function () {
 
     Route::get('/student/status', [StudentStatusController::class, 'index'])->name('student.status');
 
+    Route::get('/student/calendar', function () {
+        return view('student.calendar');
+    })->name('student.calendar');
+
+    Route::get('/student/navigate', function () {
+        return view('student.navigate');
+    })->name('student.navigate');
+
+    Route::get('/student/department-guide', function () {
+        return view('student.department-guide');
+    })->name('student.department-guide');
+
+    Route::get('/student/community', function () {
+        return view('student.community');
+    })->name('student.community');
+
+    Route::get('/student/ai-assistant', function () {
+        return view('student.ai-assistant');
+    })->name('student.ai-assistant');
+
     Route::get('/student/profile', [StudentProfileController::class, 'edit'])->name('student.profile.edit');
     Route::put('/student/profile', [StudentProfileController::class, 'updateProfile'])->name('student.profile.update');
     Route::put('/student/profile/password', [StudentProfileController::class, 'updatePassword'])->name('student.profile.password.update');

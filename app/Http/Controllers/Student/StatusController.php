@@ -134,18 +134,6 @@ class StatusController extends Controller
 
         $semesterGpa = (float) ($selectedSemesterData['gpa'] ?? 0.0);
 
-        $allTakenSubjects = $studentGrades
-            ->groupBy(fn (Grade $grade): string => (string) ($grade->subject?->name ?? 'Unknown Subject'))
-            ->map(function (Collection $grades, string $subject): array {
-                $cleanLabel = trim((string) preg_replace('/\s*\([^)]*\)\s*$/', '', $subject));
-
-                return [
-                    'label' => $cleanLabel !== '' ? $cleanLabel : 'Subject',
-                    'score' => (int) round((float) $grades->avg('score')),
-                ];
-            })
-            ->values();
-
         $yearlyOverview = $studentGrades
             ->groupBy('year')
             ->sortKeys()
@@ -211,9 +199,9 @@ class StatusController extends Controller
             ? 'Excellent Standing'
             : ($semesterGpa >= 2.0 ? 'Good Standing' : 'At Risk');
 
-        $category = $percentile <= 10
+        $category = $percentile <= 20
             ? 'Excellent Performance'
-            : ($percentile <= 25 ? 'Good Performance' : 'Needs Improvement');
+            : ($percentile <= 50 ? 'Good Performance' : 'Needs Improvement');
 
         $summary = [
             'cgpa' => $computedCgpa,
@@ -232,6 +220,30 @@ class StatusController extends Controller
         $strongest = $selectedSemesterSubjects->sortByDesc('score')->first();
         $weakest = $selectedSemesterSubjects->sortBy('score')->first();
 
+        $selectedSemesterPanel = $semesterPanels->first(function (array $panel) use ($selectedYear, $selectedSemester): bool {
+            return (int) ($panel['year'] ?? 0) === $selectedYear
+                && (string) ($panel['semester'] ?? '') === $selectedSemester;
+        }) ?? [
+            'year' => $selectedYear,
+            'semester' => $selectedSemester,
+            'gpa' => $semesterGpa,
+            'credits' => 0,
+        ];
+
+        $chronologicalPanels = $semesterPanels
+            ->filter(fn (array $panel): bool => (int) ($panel['credits'] ?? 0) > 0)
+            ->sortBy(fn (array $panel): int => ((int) ($panel['year'] ?? 0) * 10) + (((string) ($panel['semester'] ?? '') === 'Sem 1') ? 1 : 2))
+            ->values();
+
+        $currentPanelIndex = $chronologicalPanels->search(function (array $panel) use ($selectedYear, $selectedSemester): bool {
+            return (int) ($panel['year'] ?? 0) === $selectedYear
+                && (string) ($panel['semester'] ?? '') === $selectedSemester;
+        });
+
+        $previousTermPanel = is_int($currentPanelIndex) && $currentPanelIndex > 0
+            ? $chronologicalPanels->get($currentPanelIndex - 1)
+            : null;
+
         $previousYearOverview = $yearlyOverview
             ->filter(fn ($row) => $row['year'] < ($currentYearOverview['year'] ?? $selectedYear))
             ->sortByDesc('year')
@@ -239,35 +251,30 @@ class StatusController extends Controller
 
         $yearlyChange = (float) (($currentYearOverview['year_gpa'] ?? 0) - ($previousYearOverview['year_gpa'] ?? 0));
 
-        $hasPreviousSemesterData = false;
-        $previousSemesterGpa = 0.0;
-
-        if ($selectedSemester === 'Sem 2') {
-            $previousSemesterGpa = (float) ($semesterBreakdown->firstWhere('semester', 'Sem 1')['gpa'] ?? 0.0);
-            $hasPreviousSemesterData = $semesterBreakdown->contains(fn ($row) => (string) ($row['semester'] ?? '') === 'Sem 1' && isset($row['gpa']));
-        } else {
-            $previousSemesterGpa = (float) ($previousYearOverview['sem2_gpa'] ?? 0.0);
-            $hasPreviousSemesterData = is_array($previousYearOverview ?? null);
-        }
-
+        $hasPreviousSemesterData = is_array($previousTermPanel);
+        $previousSemesterGpa = (float) ($previousTermPanel['gpa'] ?? 0.0);
         $gpaChange = round($semesterGpa - $previousSemesterGpa, 2);
+
+        $termLabel = (string) ($selectedSemesterPanel['semester'] ?? $selectedSemester);
+        $termYear = (int) ($selectedSemesterPanel['year'] ?? $selectedYear);
 
         $insights = [
             $hasPreviousSemesterData
-                ? 'GPA '.($gpaChange >= 0 ? 'increased' : 'decreased').' by '.($gpaChange >= 0 ? '+' : '').number_format($gpaChange, 2).' from last semester'
-                : 'No previous semester GPA found for comparison',
+                ? $termLabel.' '.$termYear.' GPA '.($gpaChange >= 0 ? 'increased' : 'decreased').' by '.($gpaChange >= 0 ? '+' : '').number_format($gpaChange, 2).' versus previous available term'
+                : 'No previous academic term with grades found for comparison',
             'Strongest subject: '.((string) ($strongest['subject'] ?? 'N/A')),
             'Weakest subject: '.((string) ($weakest['subject'] ?? 'N/A')),
             $hasPreviousSemesterData
-                ? 'Overall performance: '.($gpaChange > 0 ? 'Improving' : ($gpaChange < 0 ? 'Declining' : 'Stable'))
+                ? 'Overall performance: '.($gpaChange > 0 ? 'Improving' : ($gpaChange < 0 ? 'Declining' : 'Stable')).' this term'
                 : 'Overall performance: Baseline',
+            'Year comparison: '.($yearlyChange >= 0 ? '+' : '').number_format($yearlyChange, 2).' GPA versus previous year',
         ];
 
         $trendLabels = $yearlyOverview->map(fn ($row): string => (string) ($row['year'] ?? ''))->values();
         $trendValues = $yearlyOverview->map(fn ($row): float => (float) ($row['year_gpa'] ?? 0.0))->values();
 
-        $performanceLabels = $allTakenSubjects->pluck('label')->values();
-        $performanceValues = $allTakenSubjects->pluck('score')->values();
+        $performanceLabels = $selectedSemesterSubjects->map(fn (array $subject): string => (string) ($subject['subject'] ?? 'Subject'))->values();
+        $performanceValues = $selectedSemesterSubjects->map(fn (array $subject): int => (int) ($subject['score'] ?? 0))->values();
 
         $semesterPanels = $semesterPanels
             ->map(function (array $panel): array {
@@ -328,6 +335,7 @@ class StatusController extends Controller
             'trendValues' => $trendValues,
             'performanceLabels' => $performanceLabels,
             'performanceValues' => $performanceValues,
+            'selectedSemesterPanelTitle' => $termLabel.' '.$termYear,
         ]);
     }
 

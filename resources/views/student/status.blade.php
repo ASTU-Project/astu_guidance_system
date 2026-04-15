@@ -35,7 +35,7 @@
                     </select>
                 </div>
 
-                <button type="submit" class="inline-flex h-9 items-center gap-1.5 rounded-md bg-cyan-700 px-3 py-2 text-xs font-medium text-white hover:bg-cyan-800">
+                <button type="submit" class="inline-flex h-9 items-center gap-1.5 rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-800">
                     <i class="fa fa-filter text-[11px]"></i>
                     Apply Filter
                 </button>
@@ -211,8 +211,8 @@
 
         <section id="status-performance" class="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <h3 class="text-lg font-semibold text-cyan-700">Subject Performance (All Taken Subjects)</h3>
-                <p class="text-xs text-slate-500">Score scale: 0 - 100 • All semesters</p>
+                <h3 class="text-lg font-semibold text-cyan-700">Subject Performance (Selected Semester)</h3>
+                <p class="text-xs text-slate-500">Score scale: 0 - 100 • {{ $selectedSemesterPanelTitle ?? 'Selected term' }}</p>
             </div>
 
             <div class="mt-4 rounded border border-slate-200 bg-slate-50 p-2">

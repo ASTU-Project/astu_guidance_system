@@ -43,6 +43,26 @@
                     <i class="fa-solid fa-graduation-cap w-4 text-center text-xs"></i>
                     <span>Academic Status</span>
                 </a>
+                <a href="{{ route('student.calendar') }}" class="nav-item {{ request()->routeIs('student.calendar') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-calendar w-4 text-center text-xs"></i>
+                    <span> Calendar</span>
+                </a>
+                <a href="{{ route('student.navigate') }}" class="nav-item {{ request()->routeIs('student.navigate') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-location-dot w-4 text-center text-xs"></i>
+                    <span>Navigate</span>
+                </a>
+                <a href="{{ route('student.department-guide') }}" class="nav-item {{ request()->routeIs('student.department-guide') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-compass w-4 text-center text-xs"></i>
+                    <span>Department Guide</span>
+                </a>
+                <a href="{{ route('student.community') }}" class="nav-item {{ request()->routeIs('student.community') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-users w-4 text-center text-xs"></i>
+                    <span>Community</span>
+                </a>
+                <a href="{{ route('student.ai-assistant') }}" class="nav-item {{ request()->routeIs('student.ai-assistant') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-robot w-4 text-center text-xs"></i>
+                    <span>AI Assistant</span>
+                </a>
                 <a href="{{ route('student.profile.edit') }}" class="nav-item {{ request()->routeIs('student.profile.*') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
                     <i class="fa-solid fa-user w-4 text-center text-xs"></i>
                     <span>Profile</span>
