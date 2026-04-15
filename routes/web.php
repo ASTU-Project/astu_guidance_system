@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CalendarController;
 use App\Http\Controllers\Admin\CalendarEventController;
+use App\Http\Controllers\Admin\AdminChatController;
 use App\Http\Controllers\Admin\AutomationSettingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DepartmentController;
@@ -11,8 +12,8 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\StudentLoginController;
-use App\Http\Controllers\ChatController;
 use App\Http\Controllers\Student\ProfileController as StudentProfileController;
+use App\Http\Controllers\Student\StudentChatController;
 use App\Http\Controllers\Student\StatusController as StudentStatusController;
 use Illuminate\Support\Facades\Route;
 
@@ -73,7 +74,7 @@ Route::middleware(['auth:web'])->group(function () {
     Route::get('/admin/automate', function () {
         return view('admin.automate');
     })->name('admin.automate');
-    Route::post('/admin/automate/chat', ChatController::class)->name('admin.automate.chat');
+    Route::post('/admin/automate/chat', AdminChatController::class)->name('admin.automate.chat');
 
 
 });
@@ -104,6 +105,7 @@ Route::middleware(['auth:student'])->group(function () {
     Route::get('/student/ai-assistant', function () {
         return view('student.ai-assistant');
     })->name('student.ai-assistant');
+    Route::post('/student/ai-assistant/chat', StudentChatController::class)->name('student.ai-assistant.chat');
 
     Route::get('/student/profile', [StudentProfileController::class, 'edit'])->name('student.profile.edit');
     Route::put('/student/profile', [StudentProfileController::class, 'updateProfile'])->name('student.profile.update');

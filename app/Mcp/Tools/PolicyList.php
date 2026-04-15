@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Models\Policy;
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -44,13 +45,12 @@ class PolicyList extends Tool
     {
         $user = $request->get('user') ?? $request->user();
 
-        if (! $user instanceof User) {
+        if (! $user instanceof User && ! $user instanceof Student) {
             return Response::error('Unauthenticated');
         }
 
-        if (! $this->isAdmin($user)) {
-            return Response::error('Forbidden: admin access required for policy tool.');
-        }
+        $isAdminUser = $user instanceof User && $this->isAdmin($user);
+        $isStudentUser = $user instanceof Student;
 
         $q = trim((string) $this->param($request, 'q', ''));
         $id = $this->param($request, 'id');
@@ -62,6 +62,11 @@ class PolicyList extends Tool
         $sortOrder = strtolower(trim((string) $this->param($request, 'sort_order', 'asc')));
         $limit = (int) $this->param($request, 'limit', 10);
         $limit = max(1, min(self::MAX_LIMIT, $limit));
+
+        // Students can only read active policies.
+        if ($isStudentUser && ! $isAdminUser) {
+            $activeOnly = true;
+        }
 
         if (! in_array($sortBy, self::ALLOWED_SORT_BY, true)) {
             $sortBy = 'id';

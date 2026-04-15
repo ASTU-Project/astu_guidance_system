@@ -10,9 +10,6 @@ use App\Models\ChatMessage;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -22,228 +19,54 @@ use League\CommonMark\CommonMarkConverter;
 
 class ChatController extends Controller
 {
-    private const DEFAULT_MODEL = 'qwen-3-235b-a22b-instruct-2507';
-    private const API = 'https://api.cerebras.ai/v1/chat/completions';
-    private const MAX_COMPLETION_TOKENS = 512;
-    private const OVERLOAD_MAX_COMPLETION_TOKENS = 256;
-    private const TEMPERATURE = 0.2;
-    private const TOP_P = 1;
-    private const RATE_LIMIT_RETRIES = 2;
-    private const RATE_LIMIT_BACKOFF_MS = 2000;
-    private const RATE_LIMIT_MAX_WAIT_MS = 2500;
-    private const MAX_TOOL_ROUNDS = 2;
-    private const HISTORY_LIMIT = 3;
-    private const HISTORY_MESSAGE_CHAR_LIMIT = 700;
-    private const TOOL_RESULT_CHAR_BUDGET = 20000;
-    private const TOOL_LIST_HARD_LIMIT = 25;
-    private const STUDENT_TOOL_LIST_HARD_LIMIT = 100;
-    private const FAST_PATH_STUDENT_DEFAULT_LIMIT = 10;
-    private const IN_FLIGHT_LOCK_SECONDS = 10;
+    protected const DEFAULT_MODEL = 'qwen-3-235b-a22b-instruct-2507';
+    protected const API = 'https://api.cerebras.ai/v1/chat/completions';
+    protected const MAX_COMPLETION_TOKENS = 512;
+    protected const OVERLOAD_MAX_COMPLETION_TOKENS = 256;
+    protected const TEMPERATURE = 0.2;
+    protected const TOP_P = 1;
+    protected const RATE_LIMIT_RETRIES = 2;
+    protected const RATE_LIMIT_BACKOFF_MS = 2000;
+    protected const RATE_LIMIT_MAX_WAIT_MS = 2500;
+    protected const MAX_TOOL_ROUNDS = 2;
+    protected const HISTORY_LIMIT = 3;
+    protected const HISTORY_MESSAGE_CHAR_LIMIT = 700;
+    protected const TOOL_RESULT_CHAR_BUDGET = 20000;
+    protected const TOOL_LIST_HARD_LIMIT = 25;
+    protected const STUDENT_TOOL_LIST_HARD_LIMIT = 100;
+    protected const FAST_PATH_STUDENT_DEFAULT_LIMIT = 10;
+    protected const IN_FLIGHT_LOCK_SECONDS = 10;
 
-    public function __invoke(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'message' => ['required', 'string'],
-            'session_id' => ['nullable', 'string', 'max:100'],
-        ]);
-
-        $apiKey = config('services.cerebras.key');
-        $model = (string) config('services.cerebras.model', self::DEFAULT_MODEL);
-
-        if (! is_string($apiKey) || trim($apiKey) === '') {
-            return response()->json([
-                'error' => 'Cerebras API key is missing. Configure services.cerebras.key.',
-            ], 500);
-        }
-
-        $user = $request->user();
-        $message = trim($validated['message']);
-        $sessionId = $validated['session_id'] ?? (string) Str::uuid();
-
-        $lockKey = $this->buildInFlightLockKey($user, $sessionId, $request->ip() ?? 'unknown');
-        $lock = Cache::lock($lockKey, self::IN_FLIGHT_LOCK_SECONDS);
-        $lockAcquired = $lock->get();
-
-        if (! $lockAcquired) {
-            return response()->json([
-                'error' => 'A previous chat request is still processing. Please wait a moment and try again.',
-                'session_id' => $sessionId,
-            ], 429);
-        }
-
-        $automationSettings = $this->getAutomationSettings($user);
-        $systemInstruction = $this->buildSystemInstruction($user, $automationSettings);
-        $conversationMessages = $this->buildConversationMessages($user, $sessionId, $message, $systemInstruction);
-        $enabledToolGroups = $this->getEnabledToolGroupsFromSettings($automationSettings);
-        $enabledToolGroups = $this->applyDefaultReadToolGroups($enabledToolGroups, $user);
-        $enabledToolGroups = $this->filterToolGroupsForUser($enabledToolGroups, $user);
-        $tools = $this->buildToolDefinitions($enabledToolGroups, $user);
-        $toolingMessages = $conversationMessages;
-
-        try {
-            $fastPath = $this->tryHandleGroundedReadFastPath($message, $enabledToolGroups, $user);
-            if ($fastPath !== null) {
-                $assistantText = $fastPath;
-                $assistantHtml = $this->renderAssistantHtml($assistantText);
-
-                if ($user !== null && Schema::hasTable('chat_messages')) {
-                    ChatMessage::create([
-                        'user_id' => $user->id,
-                        'session_id' => $sessionId,
-                        'role' => 'user',
-                        'content' => $message,
-                    ]);
-
-                    ChatMessage::create([
-                        'user_id' => $user->id,
-                        'session_id' => $sessionId,
-                        'role' => 'assistant',
-                        'content' => $assistantText,
-                    ]);
-                }
-
-                return response()->json([
-                    'message' => $assistantText,
-                    'message_html' => $assistantHtml,
-                    'session_id' => $sessionId,
-                ]);
-            }
-
-            $assistantMessagePayload = null;
-            $finalAssistantMessage = '';
-            $toolRounds = 0;
-
-            while ($toolRounds < self::MAX_TOOL_ROUNDS) {
-                $payload = [
-                    'model' => $model,
-                    'messages' => $toolingMessages,
-                    'max_completion_tokens' => self::MAX_COMPLETION_TOKENS,
-                    'temperature' => self::TEMPERATURE,
-                    'top_p' => self::TOP_P,
-                ];
-
-                if ($tools !== []) {
-                    $payload['tools'] = $tools;
-                    $payload['tool_choice'] = $this->decideToolChoice($message, $enabledToolGroups, $tools, $user) ?? 'auto';
-                }
-
-                $response = $this->postCompletionWithBackoff($apiKey, $payload);
-
-                if (! $response->successful()) {
-                    $status = $response->status();
-                    $friendlyError = 'Unexpected API error.';
-
-                    if ($status === 401) {
-                        $friendlyError = 'Invalid API key.';
-                    } elseif ($status === 429) {
-                        $friendlyError = 'AI service is busy right now (rate limited). Please wait a moment and try again.';
-                    } elseif ($status >= 500) {
-                        $friendlyError = 'AI service is down. Try again later.';
-                    }
-
-                    Log::warning('Cerebras non-success response', [
-                        'status' => $status,
-                        'body' => $response->json() ?? $response->body(),
-                    ]);
-
-                    return response()->json([
-                        'error' => $friendlyError,
-                    ], $status === 429 ? 429 : 502);
-                }
-
-                $assistantMessagePayload = $response->json('choices.0.message');
-
-                if (! is_array($assistantMessagePayload)) {
-                    return response()->json([
-                        'error' => 'AI response format was invalid.'], 502);
-                }
-
-                $toolCalls = is_array($assistantMessagePayload['tool_calls'] ?? null)
-                    ? $assistantMessagePayload['tool_calls']
-                    : [];
-
-                if ($toolCalls === []) {
-                    $finalAssistantMessage = (string) ($assistantMessagePayload['content'] ?? '');
-                    break;
-                }
-
-                $toolingMessages[] = $assistantMessagePayload;
-
-                foreach ($toolCalls as $call) {
-                    $toolingMessages[] = $this->executeToolCall($call, $enabledToolGroups, $user);
-                }
-
-                $toolRounds++;
-            }
-
-            if ($assistantMessagePayload === null) {
-                return response()->json([
-                    'error' => 'AI response was empty.',
-                ], 502);
-            }
-
-            if ($finalAssistantMessage === '' && isset($assistantMessagePayload['content'])) {
-                $finalAssistantMessage = (string) $assistantMessagePayload['content'];
-            }
-
-            $assistantText = $this->normalizeAssistantContent($finalAssistantMessage);
-            if (trim($assistantText) === '') {
-                $assistantText = 'I could not generate a complete response. Please retry your request.';
-            }
-            $assistantHtml = $this->renderAssistantHtml($assistantText);
-
-            if ($user !== null && Schema::hasTable('chat_messages')) {
-                ChatMessage::create([
-                    'user_id' => $user->id,
-                    'session_id' => $sessionId,
-                    'role' => 'user',
-                    'content' => $message,
-                ]);
-
-                ChatMessage::create([
-                    'user_id' => $user->id,
-                    'session_id' => $sessionId,
-                    'role' => 'assistant',
-                    'content' => $assistantText,
-                ]);
-            }
-
-            return response()->json([
-                'message' => $assistantText,
-                'message_html' => $assistantHtml,
-                'session_id' => $sessionId,
-            ]);
-        } catch (ConnectionException $exception) {
-            Log::warning('Cerebras connection exception', [
-                'message' => $exception->getMessage(),
-            ]);
-
-            return response()->json([
-                'error' => 'Network connection to Cerebras was reset. Please retry.',
-            ], 503);
-        } catch (\Throwable $exception) {
-            Log::error('Chat controller exception', [
-                'message' => $exception->getMessage(),
-            ]);
-
-            return response()->json([
-                'error' => 'Unable to complete chat request.',
-            ], 500);
-        } finally {
-            if ($lockAcquired) {
-                $lock->release();
-            }
-        }
-    }
-
-    private function buildInFlightLockKey(mixed $user, string $sessionId, string $ip): string
+    protected function buildInFlightLockKey(mixed $user, string $sessionId, string $ip): string
     {
         $userPart = ($user !== null && isset($user->id)) ? ('u:'.$user->id) : ('ip:'.$ip);
 
         return 'chat:in_flight:'.$userPart.':'.$sessionId;
     }
 
-    private function normalizeAssistantContent(mixed $content): string
+    protected function buildStudentContextPrompt(mixed $student, string $message): string
+    {
+        if (! is_object($student)) {
+            return 'Student profile context is unavailable. Message: '.$message;
+        }
+
+        $name = (string) ($student->name ?? 'Student');
+        $department = (string) ($student->department ?? 'Unknown Department');
+        $year = (string) ($student->current_year ?? 'Unknown Year');
+        $semester = (string) ($student->current_semester ?? 'Unknown Semester');
+
+        return implode("\n", [
+            'Student profile context:',
+            '- Name: '.$name,
+            '- Department: '.$department,
+            '- Current Year: '.$year,
+            '- Current Semester: '.$semester,
+            '',
+            'Student message: '.$message,
+        ]);
+    }
+
+    protected function normalizeAssistantContent(mixed $content): string
     {
         if (is_string($content)) {
             return $content;
@@ -271,7 +94,7 @@ class ChatController extends Controller
      *
      * @param array<string, mixed> $payload
      */
-    private function postCompletionWithBackoff(string $apiKey, array $payload): Response
+    protected function postCompletionWithBackoff(string $apiKey, array $payload): Response
     {
         $attempt = 0;
         $requestPayload = $payload;
@@ -318,7 +141,7 @@ class ChatController extends Controller
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
-    private function buildOverloadPayload(array $payload): array
+    protected function buildOverloadPayload(array $payload): array
     {
         $payload['max_completion_tokens'] = min(
             (int) ($payload['max_completion_tokens'] ?? self::MAX_COMPLETION_TOKENS),
@@ -345,7 +168,7 @@ class ChatController extends Controller
         return $payload;
     }
 
-    private function renderAssistantHtml(string $content): string
+    protected function renderAssistantHtml(string $content): string
     {
         $converter = new CommonMarkConverter([
             'html_input' => 'strip',
@@ -358,7 +181,7 @@ class ChatController extends Controller
         return (string) $converter->convert($content);
     }
 
-    private function buildSystemInstruction(mixed $user, ?AutomationSetting $settings = null): string
+    protected function buildSystemInstruction(mixed $user, ?AutomationSetting $settings = null): string
     {
         $baseInstruction = implode("\n", [
             'Role: Academic administration assistant for ASTU Management System.',
@@ -413,7 +236,7 @@ class ChatController extends Controller
     /**
      * @return array<int, string>
      */
-    private function getEnabledToolGroupsFromSettings(?AutomationSetting $settings): array
+    protected function getEnabledToolGroupsFromSettings(?AutomationSetting $settings): array
     {
         if (! $settings) {
             return [];
@@ -428,7 +251,7 @@ class ChatController extends Controller
      * @param array<int, string> $groups
      * @return array<int, string>
      */
-    private function applyDefaultReadToolGroups(array $groups, mixed $user): array
+    protected function applyDefaultReadToolGroups(array $groups, mixed $user): array
     {
         if ($groups !== []) {
             return $groups;
@@ -447,7 +270,7 @@ class ChatController extends Controller
      * @param array<int, string> $groups
      * @return array<int, string>
      */
-    private function filterToolGroupsForUser(array $groups, mixed $user): array
+    protected function filterToolGroupsForUser(array $groups, mixed $user): array
     {
         $groups = array_values(array_unique($groups));
 
@@ -458,7 +281,7 @@ class ChatController extends Controller
         return array_values(array_filter($groups, static fn (string $group): bool => $group === 'departments'));
     }
 
-    private function getAutomationSettings(mixed $user): ?AutomationSetting
+    protected function getAutomationSettings(mixed $user): ?AutomationSetting
     {
         if ($user === null || ! isset($user->id) || ! Schema::hasTable('automation_settings')) {
             return null;
@@ -467,7 +290,7 @@ class ChatController extends Controller
         return AutomationSetting::query()->where('user_id', $user->id)->first();
     }
 
-    private function tryHandleGroundedReadFastPath(string $message, array $enabledToolGroups, mixed $user): ?string
+    protected function tryHandleGroundedReadFastPath(string $message, array $enabledToolGroups, mixed $user): ?string
     {
         $text = mb_strtolower($message);
         $looksLikeList = (bool) preg_match('/\b(list|show|display|all|give me|provide)\b/', $text);
@@ -532,7 +355,7 @@ class ChatController extends Controller
             }
 
             $policyPayload = null;
-            if ($this->isAdminUser($user)) {
+            if (in_array('policies', $enabledToolGroups, true)) {
                 $policyPayload = $this->runMcpTool(new PolicyList(), $enabledToolGroups, 'policies', $user, [
                     'limit' => self::TOOL_LIST_HARD_LIMIT,
                     'sort_by' => 'id',
@@ -588,7 +411,7 @@ class ChatController extends Controller
             } elseif ($mentionsPolicies) {
                 $lines[] = '';
                 $lines[] = '## Policies';
-                $lines[] = '- Policy tools are only available to admin users.';
+                $lines[] = '- No matching policy records were found.';
             }
 
             return implode("\n", $lines);
@@ -811,7 +634,7 @@ class ChatController extends Controller
      * @param array<int, string> $enabledToolGroups
      * @return array<int, array<string, mixed>>
      */
-    private function buildToolDefinitions(array $enabledToolGroups, mixed $user): array
+    protected function buildToolDefinitions(array $enabledToolGroups, mixed $user): array
     {
         $tools = [];
 
@@ -894,7 +717,7 @@ class ChatController extends Controller
      * @param array<int, array<string, mixed>> $tools
      * @return array<string, mixed>|string|null
      */
-    private function decideToolChoice(string $message, array $enabledToolGroups, array $tools, mixed $user): array|string|null
+    protected function decideToolChoice(string $message, array $enabledToolGroups, array $tools, mixed $user): array|string|null
     {
         if ($tools === []) {
             return null;
@@ -940,7 +763,7 @@ class ChatController extends Controller
     * @param mixed $user
      * @return array<string, string>
      */
-    private function executeToolCall(array $call, array $enabledToolGroups, mixed $user): array
+    protected function executeToolCall(array $call, array $enabledToolGroups, mixed $user): array
     {
         $callId = (string) ($call['id'] ?? Str::uuid());
         $function = is_array($call['function'] ?? null) ? $call['function'] : [];
@@ -973,7 +796,7 @@ class ChatController extends Controller
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
-    private function compactToolResult(array $payload): array
+    protected function compactToolResult(array $payload): array
     {
         if (isset($payload['students']) && is_array($payload['students'])) {
             $payload['students'] = array_slice($payload['students'], 0, self::STUDENT_TOOL_LIST_HARD_LIMIT);
@@ -1010,7 +833,7 @@ class ChatController extends Controller
      * @param array<string, mixed> $args
      * @return array<string, mixed>
      */
-    private function runMcpTool(object $tool, array $enabledToolGroups, string $requiredGroup, mixed $user, array $args = []): array
+    protected function runMcpTool(object $tool, array $enabledToolGroups, string $requiredGroup, mixed $user, array $args = []): array
     {
         if (! in_array($requiredGroup, $enabledToolGroups, true)) {
             return [
@@ -1052,7 +875,7 @@ class ChatController extends Controller
     /**
      * @return array<string, mixed>|null
      */
-    private function normalizeMcpContent(mixed $content): ?array
+    protected function normalizeMcpContent(mixed $content): ?array
     {
         if (is_array($content)) {
             return $content;
@@ -1116,7 +939,7 @@ class ChatController extends Controller
      *
      * @return array<int, array<string, string>>
      */
-    private function buildConversationMessages(mixed $user, string $sessionId, string $currentMessage, string $systemInstruction): array
+    protected function buildConversationMessages(mixed $user, string $sessionId, string $currentMessage, string $systemInstruction): array
     {
         $messages = [
             [
@@ -1152,7 +975,7 @@ class ChatController extends Controller
         return $messages;
     }
 
-    private function isAdminUser(mixed $user): bool
+    protected function isAdminUser(mixed $user): bool
     {
         if (! $user instanceof User) {
             return false;
@@ -1178,7 +1001,7 @@ class ChatController extends Controller
         return (int) $user->id === 1;
     }
 
-    private function extractRequestedStudentLimit(string $message): int
+    protected function extractRequestedStudentLimit(string $message): int
     {
         if (preg_match('/\b(\d{1,3})\s+students?\b/i', $message, $matches)) {
             $requested = (int) ($matches[1] ?? self::FAST_PATH_STUDENT_DEFAULT_LIMIT);
@@ -1189,7 +1012,7 @@ class ChatController extends Controller
         return self::FAST_PATH_STUDENT_DEFAULT_LIMIT;
     }
 
-    private function extractRequestedMinCgpa(string $message): ?float
+    protected function extractRequestedMinCgpa(string $message): ?float
     {
         if (preg_match('/\b(?:more than|greater than|above|over|at least|min(?:imum)?|>=|>)\s*(\d(?:\.\d{1,2})?)\b/i', $message, $matches)) {
             $value = (float) ($matches[1] ?? 0);
@@ -1206,7 +1029,7 @@ class ChatController extends Controller
         return null;
     }
 
-    private function extractRequestedPolicyId(string $message): ?int
+    protected function extractRequestedPolicyId(string $message): ?int
     {
         if (preg_match('/\b(?:policy|policies|policys|rule|rules|regulation|regulations)\s*#?\s*(\d+)\b/i', $message, $matches)) {
             $policyId = (int) ($matches[1] ?? 0);
