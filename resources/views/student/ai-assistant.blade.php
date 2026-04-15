@@ -7,8 +7,8 @@
     <div class="space-y-5">
         <div class="overflow-hidden">
             <div>
-                <section class="flex h-[calc(100vh-5rem)] sm:h-[calc(100vh-6rem)] flex-col bg-slate-50 rounded-md border border-slate-200">
-                    <div class="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+                <section class="flex h-[calc(100vh-5rem)] sm:h-[calc(100vh-6rem)] flex-col">
+                    <div class="flex-1 overflow-y-auto pb-2">
                         <div id="chat-thread" class="mx-auto flex max-w-4xl flex-col gap-4" data-chat-url="{{ route('student.ai-assistant.chat') }}">
                             <div class="flex items-end gap-3">
                                 <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
@@ -133,11 +133,12 @@
                 persistThread();
             };
 
-            const appendAssistantMessage = function (text) {
+            const appendAssistantMessage = function (text, html) {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'flex items-end gap-3';
 
-                const formatted = escapeHtml(text).replace(/\n/g, '<br>');
+                const safeText = escapeHtml(text).replace(/\n/g, '<br>');
+                const formatted = (typeof html === 'string' && html.trim() !== '') ? html : safeText;
 
                 wrapper.innerHTML = `
                     <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
@@ -239,7 +240,7 @@
                     }
 
                     loadingBubble.remove();
-                    appendAssistantMessage(data.message || 'No response content returned.');
+                    appendAssistantMessage(data.message || 'No response content returned.', data.message_html || '');
                 } catch (error) {
                     loadingBubble.remove();
                     appendAssistantMessage(error.message || 'Unable to connect to the assistant.');
