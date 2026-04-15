@@ -8,6 +8,31 @@
         <div class="overflow-hidden">
             <div>
                 <section class="flex h-[calc(100vh-5rem)] sm:h-[calc(100vh-6rem)] flex-col">
+                    <div class="mx-auto flex w-full max-w-4xl justify-center px-2 pb-2 sm:px-0">
+                        <div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm" role="tablist" aria-label="Assistant mode selector">
+                            <button
+                                id="mode-assistant-button"
+                                type="button"
+                                data-mode="assistant"
+                                class="mode-toggle-button rounded-md px-3 py-1.5 text-xs font-semibold text-slate-700"
+                                role="tab"
+                                aria-selected="true"
+                            >
+                                Academic Assistant
+                            </button>
+                            <button
+                                id="mode-guide-button"
+                                type="button"
+                                data-mode="guide"
+                                class="mode-toggle-button rounded-md px-3 py-1.5 text-xs font-semibold text-slate-700"
+                                role="tab"
+                                aria-selected="false"
+                            >
+                                Academic Guide
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="flex-1 overflow-y-auto pb-2">
                         <div id="chat-thread" class="mx-auto flex max-w-4xl flex-col gap-4" data-chat-url="{{ route('student.ai-assistant.chat') }}">
                             <div class="flex items-end gap-3">
@@ -49,6 +74,11 @@
         body {
             overflow: hidden;
         }
+
+        .mode-toggle-button.active {
+            background-color: #0f172a;
+            color: #fff;
+        }
     </style>
 @endpush
 
@@ -59,17 +89,33 @@
             const sendButton = document.getElementById('chat-send-button');
             const newChatButton = document.getElementById('new-chat-button');
             const chatThread = document.getElementById('chat-thread');
+            const modeButtons = Array.from(document.querySelectorAll('.mode-toggle-button'));
 
             if (!messageInput || !sendButton || !chatThread) {
                 return;
             }
 
-            const sessionKey = 'student_ai_assistant_session_id';
-            const draftKey = 'student_ai_assistant_draft';
-            const threadKey = 'student_ai_assistant_thread_html';
+            const modeKey = 'student_ai_assistant_mode';
 
-            let sessionId = localStorage.getItem(sessionKey) || '';
+            let currentMode = localStorage.getItem(modeKey) || 'assistant';
+            if (!['assistant', 'guide'].includes(currentMode)) {
+                currentMode = 'assistant';
+            }
+
+            let sessionId = localStorage.getItem(getSessionKey(currentMode)) || '';
             let isSending = false;
+
+            function getSessionKey(mode) {
+                return `student_ai_assistant_session_id_${mode}`;
+            }
+
+            function getDraftKey(mode) {
+                return `student_ai_assistant_draft_${mode}`;
+            }
+
+            function getThreadKey(mode) {
+                return `student_ai_assistant_thread_html_${mode}`;
+            }
 
             const escapeHtml = function (value) {
                 return (value || '')
@@ -87,15 +133,15 @@
             };
 
             const persistThread = function () {
-                sessionStorage.setItem(threadKey, chatThread.innerHTML || '');
+                sessionStorage.setItem(getThreadKey(currentMode), chatThread.innerHTML || '');
             };
 
             const persistDraft = function () {
-                sessionStorage.setItem(draftKey, messageInput.value || '');
+                sessionStorage.setItem(getDraftKey(currentMode), messageInput.value || '');
             };
 
             const restoreDraft = function () {
-                const savedDraft = sessionStorage.getItem(draftKey);
+                const savedDraft = sessionStorage.getItem(getDraftKey(currentMode));
 
                 if (typeof savedDraft === 'string') {
                     messageInput.value = savedDraft;
@@ -103,12 +149,83 @@
             };
 
             const restoreThread = function () {
-                const savedThread = sessionStorage.getItem(threadKey);
+                const savedThread = sessionStorage.getItem(getThreadKey(currentMode));
 
                 if (typeof savedThread === 'string' && savedThread.trim() !== '') {
                     chatThread.innerHTML = savedThread;
                     scrollToBottom();
                 }
+            };
+
+            const getWelcomeMessage = function (mode) {
+                if (mode === 'guide') {
+                    return 'Hello, I\'m your Academic Guide. Ask education-related questions and I\'ll guide you through resources.';
+                }
+
+                return 'Hello, I\'m your student assistant. Ask me about academic status, campus help, or student guidance.';
+            };
+
+            const getInputPlaceholder = function (mode) {
+                if (mode === 'guide') {
+                    return 'Ask your academic guide...';
+                }
+
+                return 'Ask the assistant...';
+            };
+
+            const renderWelcomeMessage = function (mode) {
+                chatThread.innerHTML = '';
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-end gap-3';
+                wrapper.innerHTML = `
+                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
+                    <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
+                        ${escapeHtml(getWelcomeMessage(mode))}
+                        <div class="mt-2 text-[11px] text-slate-400">${timestamp()}</div>
+                    </div>
+                `;
+
+                chatThread.appendChild(wrapper);
+                persistThread();
+                scrollToBottom();
+            };
+
+            const applyModeUI = function () {
+                modeButtons.forEach(function (button) {
+                    const isActive = button.getAttribute('data-mode') === currentMode;
+                    button.classList.toggle('active', isActive);
+                    button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                });
+
+                messageInput.placeholder = getInputPlaceholder(currentMode);
+            };
+
+            const switchMode = function (mode) {
+                if (isSending || mode === currentMode) {
+                    return;
+                }
+
+                const hasDraft = messageInput.value.trim().length > 0;
+                const hasConversation = chatThread.childElementCount > 1;
+
+                if ((hasDraft || hasConversation) && !window.confirm('Switch mode and start a new chat? Your current visible conversation will be cleared.')) {
+                    return;
+                }
+
+                currentMode = mode;
+                localStorage.setItem(modeKey, currentMode);
+
+                sessionId = '';
+                localStorage.removeItem(getSessionKey(currentMode));
+                sessionStorage.removeItem(getThreadKey(currentMode));
+                sessionStorage.removeItem(getDraftKey(currentMode));
+
+                messageInput.value = '';
+                applyModeUI();
+                renderWelcomeMessage(currentMode);
+                toggleSendButton();
+                messageInput.focus();
             };
 
             const toggleSendButton = function () {
@@ -187,11 +304,12 @@
                 }
 
                 sessionId = '';
-                localStorage.removeItem(sessionKey);
-                sessionStorage.removeItem(threadKey);
-                sessionStorage.removeItem(draftKey);
+                localStorage.removeItem(getSessionKey(currentMode));
+                sessionStorage.removeItem(getThreadKey(currentMode));
+                sessionStorage.removeItem(getDraftKey(currentMode));
                 chatThread.innerHTML = '';
                 messageInput.value = '';
+                renderWelcomeMessage(currentMode);
                 toggleSendButton();
                 messageInput.focus();
             };
@@ -236,7 +354,7 @@
 
                     if (data.session_id) {
                         sessionId = data.session_id;
-                        localStorage.setItem(sessionKey, sessionId);
+                        localStorage.setItem(getSessionKey(currentMode), sessionId);
                     }
 
                     loadingBubble.remove();
@@ -254,6 +372,10 @@
 
             restoreDraft();
             restoreThread();
+            if (chatThread.childElementCount === 0) {
+                renderWelcomeMessage(currentMode);
+            }
+            applyModeUI();
             toggleSendButton();
 
             messageInput.addEventListener('input', function () {
@@ -270,6 +392,16 @@
 
             sendButton.addEventListener('click', sendMessage);
             newChatButton.addEventListener('click', startNewChat);
+            modeButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const mode = button.getAttribute('data-mode');
+                    if (!mode) {
+                        return;
+                    }
+
+                    switchMode(mode);
+                });
+            });
         });
     </script>
 @endpush
