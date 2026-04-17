@@ -40,4 +40,20 @@ return [
         'model' => env('CEREBRAS_MODEL', 'qwen-3-235b-a22b-instruct-2507'),
     ],
 
+    'zydit' => [
+        'key' => env('ZYDIT_API_KEY'),
+        'model' => env('ZYDIT_MODEL', 'z-ai/glm5'),
+        'endpoint' => env('ZYDIT_ENDPOINT', 'https://api.zydit.in/v1/chat/completions'),
+    ],
+
+    'llm' => [
+        'provider' => env('LLM_PROVIDER', 'cerebras'),
+    ],
+
+    'academic_guide' => [
+        'endpoint' => env('ACADEMIC_GUIDE_ENDPOINT', 'http://localhost:8000/v1/chat'),
+        'top_k' => (int) env('ACADEMIC_GUIDE_TOP_K', 5),
+        'timeout' => (int) env('ACADEMIC_GUIDE_TIMEOUT', 3000), # in milliseconds
+    ],
+
 ];

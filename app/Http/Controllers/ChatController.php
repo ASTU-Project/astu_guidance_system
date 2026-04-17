@@ -89,6 +89,46 @@ class ChatController extends Controller
         return 'No response content returned by model.';
     }
 
+    protected function getLlmProvider(): string
+    {
+        $provider = strtolower((string) config('services.llm.provider', 'cerebras'));
+
+        return in_array($provider, ['cerebras', 'zydit'], true) ? $provider : 'cerebras';
+    }
+
+    protected function getLlmApiKey(): string
+    {
+        $provider = $this->getLlmProvider();
+
+        if ($provider === 'zydit') {
+            return (string) config('services.zydit.key', '');
+        }
+
+        return (string) config('services.cerebras.key', '');
+    }
+
+    protected function getLlmEndpoint(): string
+    {
+        $provider = $this->getLlmProvider();
+
+        if ($provider === 'zydit') {
+            return (string) config('services.zydit.endpoint', 'https://api.zydit.in/v1/chat/completions');
+        }
+
+        return self::API;
+    }
+
+    protected function getLlmModel(): string
+    {
+        $provider = $this->getLlmProvider();
+
+        if ($provider === 'zydit') {
+            return (string) config('services.zydit.model', 'z-ai/glm5');
+        }
+
+        return (string) config('services.cerebras.model', self::DEFAULT_MODEL);
+    }
+
     /**
      * Retry once on provider 429 queue saturation with short backoff.
      *
@@ -98,6 +138,7 @@ class ChatController extends Controller
     {
         $attempt = 0;
         $requestPayload = $payload;
+        $endpoint = $this->getLlmEndpoint();
 
         while (true) {
             $response = Http::withToken($apiKey)
@@ -111,7 +152,7 @@ class ChatController extends Controller
                 ->retry(2, 400, function (\Exception $exception): bool {
                     return $exception instanceof ConnectionException;
                 }, throw: false)
-                ->post(self::API, $requestPayload);
+                ->post($endpoint, $requestPayload);
 
             if ($response->status() !== 429 || $attempt >= self::RATE_LIMIT_RETRIES) {
                 return $response;
@@ -170,6 +211,12 @@ class ChatController extends Controller
 
     protected function renderAssistantHtml(string $content): string
     {
+        $protectedLatexSegments = [];
+        $markdownContent = $this->protectLatexSegments(
+            str_replace(["\r\n", "\r"], "\n", $content),
+            $protectedLatexSegments
+        );
+
         $converter = new CommonMarkConverter([
             'html_input' => 'strip',
             'allow_unsafe_links' => false,
@@ -178,7 +225,185 @@ class ChatController extends Controller
             ],
         ]);
 
-        return (string) $converter->convert($content);
+        $html = (string) $converter->convert($markdownContent);
+
+        return $this->restoreProtectedLatexSegments($html, $protectedLatexSegments);
+    }
+
+    /**
+     * Protect LaTeX segments so Markdown formatting does not alter the math source.
+     *
+     * @param array<string, string> $protectedLatexSegments
+     */
+    protected function protectLatexSegments(string $content, array &$protectedLatexSegments): string
+    {
+        $result = '';
+        $offset = 0;
+        $length = strlen($content);
+
+        while ($offset < $length) {
+            $segment = $this->extractLatexSegment($content, $offset);
+
+            if ($segment === null) {
+                $result .= $content[$offset];
+                $offset++;
+
+                continue;
+            }
+
+            $placeholder = 'ASTU_MATH_'.count($protectedLatexSegments).'_TOKEN';
+            $protectedLatexSegments[$placeholder] = e($segment['content']);
+            $result .= $placeholder;
+            $offset = $segment['end'];
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array{content:string,end:int}|null
+     */
+    protected function extractLatexSegment(string $content, int $offset): ?array
+    {
+        $delimiters = [
+            ['open' => '$$', 'close' => '$$', 'multiline' => true],
+            ['open' => '\\[', 'close' => '\\]', 'multiline' => true],
+            ['open' => '\\(', 'close' => '\\)', 'multiline' => false],
+        ];
+
+        foreach ($delimiters as $delimiter) {
+            $open = $delimiter['open'];
+
+            if (! str_starts_with(substr($content, $offset), $open)) {
+                continue;
+            }
+
+            $start = $offset + strlen($open);
+            $closingOffset = $this->findLatexClosingDelimiter(
+                $content,
+                $start,
+                $delimiter['close'],
+                $delimiter['multiline']
+            );
+
+            if ($closingOffset === null) {
+                return null;
+            }
+
+            $end = $closingOffset + strlen($delimiter['close']);
+
+            return [
+                'content' => substr($content, $offset, $end - $offset),
+                'end' => $end,
+            ];
+        }
+
+        if (preg_match('/\\\\begin\{([a-z*]+)\}/A', substr($content, $offset), $matches) === 1) {
+            $environment = (string) ($matches[1] ?? '');
+            $opening = (string) ($matches[0] ?? '');
+            $closing = '\\end{'.$environment.'}';
+            $start = $offset + strlen($opening);
+            $closingOffset = strpos($content, $closing, $start);
+
+            if ($closingOffset !== false) {
+                $end = $closingOffset + strlen($closing);
+
+                return [
+                    'content' => substr($content, $offset, $end - $offset),
+                    'end' => $end,
+                ];
+            }
+        }
+
+        if (($content[$offset] ?? '') !== '$' || ($content[$offset + 1] ?? '') === '$' || $this->isEscapedOffset($content, $offset)) {
+            return null;
+        }
+
+        $nextCharacter = $content[$offset + 1] ?? '';
+        if ($nextCharacter === '' || preg_match('/\s/', $nextCharacter) === 1) {
+            return null;
+        }
+
+        $closingOffset = $this->findInlineDollarClosingDelimiter($content, $offset + 1);
+
+        if ($closingOffset === null) {
+            return null;
+        }
+
+        return [
+            'content' => substr($content, $offset, ($closingOffset + 1) - $offset),
+            'end' => $closingOffset + 1,
+        ];
+    }
+
+    protected function findLatexClosingDelimiter(string $content, int $offset, string $closeDelimiter, bool $allowMultiline): ?int
+    {
+        $length = strlen($content);
+        $delimiterLength = strlen($closeDelimiter);
+
+        while ($offset < $length) {
+            if (! $allowMultiline && ($content[$offset] ?? '') === "\n") {
+                return null;
+            }
+
+            if (substr($content, $offset, $delimiterLength) === $closeDelimiter && ! $this->isEscapedOffset($content, $offset)) {
+                return $offset;
+            }
+
+            $offset++;
+        }
+
+        return null;
+    }
+
+    protected function findInlineDollarClosingDelimiter(string $content, int $offset): ?int
+    {
+        $length = strlen($content);
+
+        while ($offset < $length) {
+            $character = $content[$offset] ?? '';
+
+            if ($character === "\n") {
+                return null;
+            }
+
+            if ($character === '$' && ! $this->isEscapedOffset($content, $offset)) {
+                $previousCharacter = $content[$offset - 1] ?? '';
+
+                if ($previousCharacter !== '' && preg_match('/\s/', $previousCharacter) !== 1) {
+                    return $offset;
+                }
+            }
+
+            $offset++;
+        }
+
+        return null;
+    }
+
+    protected function isEscapedOffset(string $content, int $offset): bool
+    {
+        $backslashCount = 0;
+        $cursor = $offset - 1;
+
+        while ($cursor >= 0 && ($content[$cursor] ?? '') === '\\') {
+            $backslashCount++;
+            $cursor--;
+        }
+
+        return $backslashCount % 2 === 1;
+    }
+
+    /**
+     * @param array<string, string> $protectedLatexSegments
+     */
+    protected function restoreProtectedLatexSegments(string $html, array $protectedLatexSegments): string
+    {
+        if ($protectedLatexSegments === []) {
+            return $html;
+        }
+
+        return strtr($html, $protectedLatexSegments);
     }
 
     protected function buildSystemInstruction(mixed $user, ?AutomationSetting $settings = null): string

@@ -26,12 +26,13 @@ class AdminChatController extends ChatController
             'session_id' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $apiKey = config('services.cerebras.key');
-        $model = (string) config('services.cerebras.model', self::DEFAULT_MODEL);
+        $provider = $this->getLlmProvider();
+        $apiKey = $this->getLlmApiKey();
+        $model = $this->getLlmModel();
 
-        if (! is_string($apiKey) || trim($apiKey) === '') {
+        if (trim($apiKey) === '') {
             return response()->json([
-                'error' => 'Cerebras API key is missing. Configure services.cerebras.key.',
+                'error' => ucfirst($provider).' API key is missing. Configure services.'. $provider .'.key.',
             ], 500);
         }
 

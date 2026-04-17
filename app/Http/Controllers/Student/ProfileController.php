@@ -23,7 +23,6 @@ class ProfileController extends Controller
         $student = $request->user('student');
 
         $validated = $request->validateWithBag('profileUpdate', [
-            'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required',
                 'email',
@@ -32,7 +31,9 @@ class ProfileController extends Controller
             ],
         ]);
 
-        $student->update($validated);
+        $student->update([
+            'email' => $validated['email'],
+        ]);
 
         return redirect()
             ->route('student.profile.edit')
