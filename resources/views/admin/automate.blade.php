@@ -241,7 +241,7 @@
                         ${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
                         <div class="mt-2 text-[11px] text-slate-300">${timestamp()}</div>
                     </div>
-                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-white">B</div>
+                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-white">Me</div>
                 `;
 
                 chatThread.appendChild(wrapper);
