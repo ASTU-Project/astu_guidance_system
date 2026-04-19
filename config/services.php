@@ -51,9 +51,9 @@ return [
     ],
 
     'academic_guide' => [
-        'endpoint' => env('ACADEMIC_GUIDE_ENDPOINT', 'http://localhost:8000/v1/chat'),
+        'endpoint' => env('ACADEMIC_GUIDE_ENDPOINT', 'http://127.0.0.1:8000/v1/chat'),
         'top_k' => (int) env('ACADEMIC_GUIDE_TOP_K', 5),
-        'timeout' => (int) env('ACADEMIC_GUIDE_TIMEOUT', 3000), # in milliseconds
+        'timeout' => (int) env('ACADEMIC_GUIDE_TIMEOUT', 180), # in seconds
     ],
 
 ];

@@ -224,12 +224,14 @@ class StudentChatController extends ChatController
      */
     private function handleGuideMode(Request $request, array $validated): JsonResponse
     {
+        // Apply a method-level execution budget to avoid default 30s request kills.
+        set_time_limit(240);
+
         $message = trim($validated['message']);
         $sessionId = $validated['session_id'] ?? (string) Str::uuid();
-        $endpoint = (string) config('services.academic_guide.endpoint', 'http://localhost:8000/v1/chat');
+        $endpoint = (string) config('services.academic_guide.endpoint', 'http://127.0.0.1:8000/v1/chat');
         $topK = max(1, (int) config('services.academic_guide.top_k', 5));
-        // Keep upstream timeout below common PHP max execution time to avoid fatal request kills.
-        $timeout = max(5, min(25, (int) config('services.academic_guide.timeout', 20)));
+        $timeout = max(30, min(180, (int) config('services.academic_guide.timeout', 180)));
 
         if ($endpoint === '') {
             return response()->json([
@@ -250,12 +252,30 @@ class StudentChatController extends ChatController
                 ];
             })
             ->values()
+            ->slice(-4)
             ->all();
 
         try {
+            $guideRequestId = (string) Str::uuid();
+            $startedAt = microtime(true);
+
+            Log::info('Academic Guide request started', [
+                'request_id' => $guideRequestId,
+                'endpoint' => $endpoint,
+                'history_count' => count($history),
+                'timeout_seconds' => $timeout,
+                'connect_timeout_seconds' => min(10, $timeout),
+            ]);
+
             $response = Http::acceptJson()
                 ->asJson()
-                ->connectTimeout(min(8, $timeout))
+                ->withHeaders([
+                    'X-Guide-Request-Id' => $guideRequestId,
+                ])
+                ->retry(1, 200, function ($exception): bool {
+                    return $exception instanceof ConnectionException;
+                })
+                ->connectTimeout(min(10, $timeout))
                 ->timeout($timeout)
                 ->post($endpoint, [
                     'message' => $message,
@@ -263,6 +283,12 @@ class StudentChatController extends ChatController
                     'top_k' => $topK,
                     'stream' => false,
                 ]);
+
+            Log::info('Academic Guide request completed', [
+                'request_id' => $guideRequestId,
+                'status' => $response->status(),
+                'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+            ]);
 
             if (! $response->successful()) {
                 $payload = $response->json();
@@ -309,6 +335,12 @@ class StudentChatController extends ChatController
                 'mode' => 'guide',
             ]);
         } catch (ConnectionException $exception) {
+            Log::warning('Academic Guide connection failure', [
+                'request_id' => $guideRequestId ?? null,
+                'endpoint' => $endpoint,
+                'error' => $exception->getMessage(),
+            ]);
+
             return response()->json([
                 'error' => 'Unable to connect to Academic Guide service. Please check if it is running.',
             ], 503);

@@ -53,7 +53,7 @@
                                 <textarea
                                     id="chat-message-input"
                                     rows="1"
-                                    placeholder="Ask the assistant..."
+                                    placeholder="Ask the assistant..."  
                                     class="min-h-[44px] max-h-40 flex-1 resize-none overflow-y-auto rounded-md bg-transparent px-3 py-2.5 text-slate-700 outline-none placeholder:text-slate-400"
                                 ></textarea>
                                 <button id="chat-send-button" type="button" class="hidden inline-flex h-10 w-10 items-center justify-center rounded-md bg-slate-900 text-white hover:bg-slate-800" title="Send">
