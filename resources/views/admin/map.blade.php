@@ -267,11 +267,19 @@
         <div id="campus-map-preview-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4">
             <div class="absolute inset-0 bg-slate-950/60" onclick="document.getElementById('campus-map-preview-modal').classList.add('hidden')"></div>
             <div class="relative w-full max-w-6xl rounded-md bg-white p-4 shadow-2xl">
-                <div class="mb-3 flex items-center justify-between">
+                <div class="mb-3 flex items-center justify-between gap-2">
                     <h3 class="text-lg font-semibold text-slate-900">Campus Map Preview</h3>
-                    <button type="button" class="text-slate-400 hover:text-slate-700" onclick="document.getElementById('campus-map-preview-modal').classList.add('hidden')">
-                        <i class="fa fa-times"></i>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="preview-satellite-toggle" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                            Satellite
+                        </button>
+                        <button type="button" id="preview-fullscreen-toggle" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                            Fullscreen
+                        </button>
+                        <button type="button" class="text-slate-400 hover:text-slate-700" onclick="document.getElementById('campus-map-preview-modal').classList.add('hidden')">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
                 </div>
                 <div id="campus-preview-map" class="h-[65vh] w-full rounded-md border border-slate-200"></div>
             </div>
@@ -307,6 +315,9 @@
 
         let previewMap = null;
         let previewLayer = null;
+        let previewDefaultTiles = null;
+        let previewSatelliteTiles = null;
+        let previewSatelliteEnabled = false;
 
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
@@ -357,10 +368,17 @@
                     zoomControl: true,
                 });
 
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                previewDefaultTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
                     attribution: '&copy; OpenStreetMap contributors',
-                }).addTo(previewMap);
+                });
+
+                previewSatelliteTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 19,
+                    attribution: 'Tiles &copy; Esri',
+                });
+
+                previewDefaultTiles.addTo(previewMap);
 
                 previewLayer = L.layerGroup().addTo(previewMap);
             }
@@ -389,6 +407,43 @@
             }, 80);
         }
 
+        function togglePreviewSatellite() {
+            const button = document.getElementById('preview-satellite-toggle');
+
+            if (!previewMap || !previewDefaultTiles || !previewSatelliteTiles || !button) {
+                return;
+            }
+
+            previewSatelliteEnabled = !previewSatelliteEnabled;
+
+            if (previewSatelliteEnabled) {
+                previewMap.removeLayer(previewDefaultTiles);
+                previewSatelliteTiles.addTo(previewMap);
+                button.textContent = 'Map';
+            } else {
+                previewMap.removeLayer(previewSatelliteTiles);
+                previewDefaultTiles.addTo(previewMap);
+                button.textContent = 'Satellite';
+            }
+        }
+
+        function togglePreviewFullscreen() {
+            const container = document.getElementById('campus-preview-map');
+
+            if (!container) {
+                return;
+            }
+
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+                return;
+            }
+
+            if (container.requestFullscreen) {
+                container.requestFullscreen();
+            }
+        }
+
         const previewButton = document.getElementById('open-map-preview');
         if (previewButton) {
             previewButton.addEventListener('click', function () {
@@ -396,5 +451,23 @@
                 initPreviewMap();
             });
         }
+
+        const previewSatelliteButton = document.getElementById('preview-satellite-toggle');
+        if (previewSatelliteButton) {
+            previewSatelliteButton.addEventListener('click', togglePreviewSatellite);
+        }
+
+        const previewFullscreenButton = document.getElementById('preview-fullscreen-toggle');
+        if (previewFullscreenButton) {
+            previewFullscreenButton.addEventListener('click', togglePreviewFullscreen);
+        }
+
+        document.addEventListener('fullscreenchange', function () {
+            setTimeout(function () {
+                if (previewMap) {
+                    previewMap.invalidateSize();
+                }
+            }, 80);
+        });
     </script>
 @endpush

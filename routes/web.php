@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\StudentLoginController;
 use App\Http\Controllers\Student\CalendarController as StudentCalendarController;
+use App\Http\Controllers\Student\NavigateController as StudentNavigateController;
 use App\Http\Controllers\Student\ProfileController as StudentProfileController;
 use App\Http\Controllers\Student\StudentChatController;
 use App\Http\Controllers\Student\StatusController as StudentStatusController;
@@ -91,9 +92,7 @@ Route::middleware(['auth:student'])->group(function () {
     Route::post('/student/calendar', [StudentCalendarController::class, 'store'])->name('student.calendar.store');
     Route::put('/student/calendar/{event}', [StudentCalendarController::class, 'update'])->name('student.calendar.update');
 
-    Route::get('/student/navigate', function () {
-        return view('student.navigate');
-    })->name('student.navigate');
+    Route::get('/student/navigate', [StudentNavigateController::class, 'index'])->name('student.navigate');
 
     Route::get('/student/department-guide', function () {
         return view('student.department-guide');
