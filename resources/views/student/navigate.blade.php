@@ -52,7 +52,7 @@
                             </button>
                         </div>
                     </div>
-                    <div id="student-campus-map" class="h-[65vh] w-full rounded-md border border-slate-200"></div>
+                    <div id="student-campus-map" class="h-[65vh] w-full rounded-md border border-slate-200 z-0"></div>
                 </div>
 
                 <div class="min-w-0 bg-slate-50/60">

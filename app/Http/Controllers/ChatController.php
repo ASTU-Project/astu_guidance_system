@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mcp\Tools\DepartmentList;
 use App\Mcp\Tools\PolicyList;
 use App\Mcp\Tools\StudentList;
+use App\Models\Department;
 use App\Models\AutomationSetting;
 use App\Models\ChatMessage;
 use App\Models\User;
@@ -518,11 +519,14 @@ class ChatController extends Controller
     protected function tryHandleGroundedReadFastPath(string $message, array $enabledToolGroups, mixed $user): ?string
     {
         $text = mb_strtolower($message);
-        $looksLikeList = (bool) preg_match('/\b(list|show|display|all|give me|provide)\b/', $text);
+        $looksLikeList = (bool) preg_match('/\b(list|show|display|all)\b/', $text);
         $looksLikeDetail = (bool) preg_match('/\b(detail|details|information|info|about)\b/', $text);
         $looksLikeExplain = (bool) preg_match('/\b(explain|why|how|summari[sz]e|interpret|impact|meaning|describe)\b/', $text);
+        $mentionsStudents = (bool) preg_match('/\bstudent|students\b/', $text);
         $mentionsDepartments = (bool) preg_match('/\bdepartment|departments\b/', $text);
         $mentionsPolicies = (bool) preg_match('/\b(policy|policies|policys|rule|rules|regulation|regulations)\b/', $text);
+        $looksLikeStudentRanking = $mentionsStudents && (bool) preg_match('/\b(top|highest|lowest|best|rank|ranking|score|cgpa|gpa)\b/', $text);
+        $requestedDepartment = $this->extractRequestedDepartmentName($message);
         $requestedPolicyId = $this->extractRequestedPolicyId($message);
         $hasExplicitPolicyIdRequest = $requestedPolicyId !== null;
 
@@ -723,7 +727,50 @@ class ChatController extends Controller
             return implode("\n", $lines);
         }
 
-        if ($looksLikeList && preg_match('/\bstudent|students\b/', $text)) {
+        if ($looksLikeStudentRanking) {
+            $requestedLimit = $this->extractRequestedStudentLimit($message);
+            $payload = $this->runMcpTool(new StudentList(), $enabledToolGroups, 'students', $user, [
+                'department' => $requestedDepartment ?? '',
+                'sort_by' => 'cgpa',
+                'sort_order' => 'desc',
+                'limit' => $requestedLimit,
+            ]);
+
+            if (isset($payload['error'])) {
+                return null;
+            }
+
+            $students = is_array($payload['students'] ?? null) ? $payload['students'] : [];
+            if ($students === []) {
+                if ($requestedDepartment !== null) {
+                    return 'No students found for '.$requestedDepartment.' ranked by CGPA.';
+                }
+
+                return 'No students found for the requested GPA ranking.';
+            }
+
+            $heading = '## Top students by CGPA';
+            if ($requestedDepartment !== null) {
+                $heading .= ' in '.$requestedDepartment;
+            }
+
+            $lines = [$heading.' ('.count($students).')'];
+            foreach ($students as $student) {
+                if (is_array($student) && isset($student['name'], $student['student_id'])) {
+                    $cgpa = isset($student['cgpa']) ? (string) $student['cgpa'] : '—';
+                    $lines[] = '- '.(string) $student['name'].' ('.(string) $student['student_id'].') - CGPA: '.$cgpa;
+                }
+            }
+
+            if ($requestedLimit >= self::STUDENT_TOOL_LIST_HARD_LIMIT) {
+                $lines[] = '';
+                $lines[] = 'Note: Student list is capped at '.self::STUDENT_TOOL_LIST_HARD_LIMIT.' records per request.';
+            }
+
+            return implode("\n", $lines);
+        }
+
+        if ($looksLikeList && $mentionsStudents && ! $looksLikeStudentRanking) {
             $requestedLimit = $this->extractRequestedStudentLimit($message);
             $payload = $this->runMcpTool(new StudentList(), $enabledToolGroups, 'students', $user, [
                 'limit' => $requestedLimit,
@@ -754,7 +801,7 @@ class ChatController extends Controller
         }
 
         $looksLikeStudentCgpaFilter = (bool) preg_match('/\b(cgpa|gpa)\b/', $text)
-            && (bool) preg_match('/\bstudent|students|sstudent|sstudents\b/', $text);
+            && $mentionsStudents;
         if ($looksLikeStudentCgpaFilter) {
             $minCgpa = $this->extractRequestedMinCgpa($message);
 
@@ -949,7 +996,9 @@ class ChatController extends Controller
         }
 
         $text = mb_strtolower($message);
-        $looksLikeList = (bool) preg_match('/\b(list|show|display|all|give me|provide)\b/', $text);
+        $looksLikeList = (bool) preg_match('/\b(list|show|display|all)\b/', $text);
+        $mentionsStudents = (bool) preg_match('/\bstudent|students\b/', $text);
+        $looksLikeStudentRanking = $mentionsStudents && (bool) preg_match('/\b(top|highest|lowest|best|rank|ranking|score|cgpa|gpa)\b/', $text);
 
         if ($looksLikeList && in_array('departments', $enabledToolGroups, true) && preg_match('/\bdepartment|departments\b/', $text)) {
             return [
@@ -958,14 +1007,14 @@ class ChatController extends Controller
             ];
         }
 
-        if ($looksLikeList && in_array('students', $enabledToolGroups, true) && $this->isAdminUser($user) && preg_match('/\bstudent|students\b/', $text)) {
+        if (in_array('students', $enabledToolGroups, true) && $this->isAdminUser($user) && $looksLikeStudentRanking) {
             return [
                 'type' => 'function',
                 'function' => ['name' => 'student_list'],
             ];
         }
 
-        if (in_array('students', $enabledToolGroups, true) && $this->isAdminUser($user) && preg_match('/\b(top|highest|lowest|best|rank|ranking|score|cgpa|gpa)\b/', $text)) {
+        if ($looksLikeList && in_array('students', $enabledToolGroups, true) && $this->isAdminUser($user) && $mentionsStudents && ! $looksLikeStudentRanking) {
             return [
                 'type' => 'function',
                 'function' => ['name' => 'student_list'],
@@ -1228,6 +1277,12 @@ class ChatController extends Controller
 
     protected function extractRequestedStudentLimit(string $message): int
     {
+        if (preg_match('/\b(?:top|first|best|highest)\s+(\d{1,3})\b/i', $message, $matches)) {
+            $requested = (int) ($matches[1] ?? self::FAST_PATH_STUDENT_DEFAULT_LIMIT);
+
+            return max(1, min(self::STUDENT_TOOL_LIST_HARD_LIMIT, $requested));
+        }
+
         if (preg_match('/\b(\d{1,3})\s+students?\b/i', $message, $matches)) {
             $requested = (int) ($matches[1] ?? self::FAST_PATH_STUDENT_DEFAULT_LIMIT);
 
@@ -1260,6 +1315,34 @@ class ChatController extends Controller
             $policyId = (int) ($matches[1] ?? 0);
 
             return $policyId > 0 ? $policyId : null;
+        }
+
+        return null;
+    }
+
+    protected function extractRequestedDepartmentName(string $message): ?string
+    {
+        if (! Schema::hasTable('departments')) {
+            return null;
+        }
+
+        $text = mb_strtolower($message);
+        $departments = Department::query()
+            ->select(['name', 'code'])
+            ->get()
+            ->sortByDesc(fn (Department $department): int => strlen((string) $department->name));
+
+        foreach ($departments as $department) {
+            $name = trim((string) ($department->name ?? ''));
+            $code = trim((string) ($department->code ?? ''));
+
+            if ($name !== '' && str_contains($text, mb_strtolower($name))) {
+                return $name;
+            }
+
+            if ($code !== '' && str_contains($text, mb_strtolower($code))) {
+                return $name !== '' ? $name : $code;
+            }
         }
 
         return null;
