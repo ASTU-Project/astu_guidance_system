@@ -127,6 +127,9 @@
                             <option value="1" @selected(old('section') == '1')>1</option>
                             <option value="2" @selected(old('section') == '2')>2</option>
                             <option value="3" @selected(old('section') == '3')>3</option>
+                            <option value="4" @selected(old('section') == '4')>4</option>
+                            <option value="5" @selected(old('section') == '5')>5</option>
+                            <option value="6" @selected(old('section') == '6')>6</option>
                         </select>
                     </div>
                     
