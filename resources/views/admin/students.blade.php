@@ -83,6 +83,7 @@
                         <th class="px-4 sm:px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Name</th>
                         <th class="px-4 sm:px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Current Year</th>
                         <th class="px-4 sm:px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Current Section</th>
+                        <th class="px-4 sm:px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Current Semester</th>
                         <th class="px-4 sm:px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Department</th>
                         <th class="px-4 sm:px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">GPA</th>
                     </tr>
@@ -94,6 +95,7 @@
                         <td class="px-4 sm:px-5 py-3 text-sm font-medium text-slate-800">{{ $student->name }}</td>
                         <td class="px-4 sm:px-5 py-3 text-sm text-slate-600">Year {{ $student->current_year }}</td>
                         <td class="px-4 sm:px-5 py-3 text-sm text-slate-600">{{ $student->current_section }}</td>
+                        <td class="px-4 sm:px-5 py-3 text-sm text-slate-600">{{ $student->semester_number  }}</td>
                         <td class="px-4 sm:px-5 py-3 text-sm text-slate-600">{{ $student->department }}</td>
                         <td class="px-4 sm:px-5 py-3 text-sm">
                             <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
