@@ -211,12 +211,12 @@
 
         <section id="status-performance" class="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <h3 class="text-lg font-semibold text-cyan-700">Subject Performance (Selected Semester)</h3>
+                <h3 class="text-lg font-semibold text-cyan-700">Subject Performance ({{ $performanceScopeLabel ?? 'Selected Semester' }})</h3>
                 <p class="text-xs text-slate-500">Score scale: 0 - 100 • {{ $selectedSemesterPanelTitle ?? 'Selected term' }}</p>
             </div>
 
             <div class="mt-4 rounded border border-slate-200 bg-slate-50 p-2">
-                <div class="relative w-full min-w-[680px] overflow-x-auto" style="min-width: 0; height: 180px; min-height: 180px; max-height: 180px;">
+                <div class="relative w-full min-w-[680px] overflow-x-auto" style="min-width: 0; height: 240px; min-height: 240px; max-height: 240px;">
                     <canvas id="subjectPerformanceChart" class="h-full w-full" aria-label="Subject performance bar chart" role="img"></canvas>
                     <div id="subjectPerformanceChartEmpty" class="absolute inset-0 hidden items-center justify-center text-sm text-slate-500">
                         No subject performance data available yet
@@ -243,6 +243,7 @@
             const trendValues = @json($trendValues);
             const performanceLabels = @json($performanceLabels);
             const performanceValues = @json($performanceValues);
+            const performanceDetails = @json($performanceDetails ?? []);
 
             const trendCanvas = document.getElementById('gpaTrendChart');
             const trendEmpty = document.getElementById('gpaTrendChartEmpty');
@@ -321,6 +322,9 @@
                     subjectEmpty?.classList.remove('hidden');
                     subjectEmpty?.classList.add('flex');
                 } else {
+                    const minChartWidth = Math.max(680, performanceLabels.length * 60);
+                    subjectCanvas.style.minWidth = `${minChartWidth}px`;
+
                     new Chart(subjectCanvas, {
                         type: 'bar',
                         data: {
@@ -342,8 +346,31 @@
                                 },
                                 tooltip: {
                                     callbacks: {
+                                        title(items) {
+                                            const item = items?.[0];
+                                            if (!item) {
+                                                return '';
+                                            }
+
+                                            const index = Number(item.dataIndex);
+                                            const detail = performanceDetails[index] ?? null;
+
+                                            return String(detail?.name ?? item.label ?? 'Subject');
+                                        },
                                         label(context) {
-                                            return ` Score: ${Number(context.parsed.y)}`;
+                                            const index = Number(context.dataIndex);
+                                            const detail = performanceDetails[index] ?? null;
+
+                                            if (!detail) {
+                                                return `${Number(context.parsed.y)}`;
+                                            }
+
+                                            return [
+                                                `Score: ${detail.score}`,
+                                                `Semester: ${detail.semester}`,
+                                                `Year: ${detail.year}`,
+                                                `Credit Hour: ${detail.credit}`,
+                                            ];
                                         },
                                     },
                                 },
@@ -355,6 +382,12 @@
                                     },
                                     ticks: {
                                         color: '#64748b',
+                                        autoSkip: false,
+                                        font: {
+                                            size: 10,
+                                        },
+                                        maxRotation: 0,
+                                        minRotation: 0,
                                     },
                                 },
                                 y: {

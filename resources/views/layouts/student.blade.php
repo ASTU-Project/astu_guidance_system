@@ -51,10 +51,17 @@
                     <i class="fa-solid fa-location-dot w-4 text-center text-xs"></i>
                     <span>Navigate</span>
                 </a>
-                <a href="{{ route('student.department-guide') }}" class="nav-item {{ request()->routeIs('student.department-guide') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-compass w-4 text-center text-xs"></i>
-                    <span>Department Guide</span>
-                </a>
+                @if(auth('student')->user()->current_year == "1")
+                    <a href="{{ route('student.department-guide') }}" class="nav-item {{ request()->routeIs('student.department-guide') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                        <i class="fa-solid fa-compass w-4 text-center text-xs"></i>
+                        <span>Department Guide</span>
+                    </a>
+                @elseif((auth('student')->user()->current_year == "2" && auth('student')->user()->semester_number  == "1"))
+                    <a href="{{ route('student.department-guide') }}" class="nav-item {{ request()->routeIs('student.department-guide') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                        <i class="fa-solid fa-compass w-4 text-center text-xs"></i>
+                        <span>Department Guide</span>
+                    </a>
+                @endif
                 <a href="{{ route('student.community') }}" class="nav-item {{ request()->routeIs('student.community') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
                     <i class="fa-solid fa-users w-4 text-center text-xs"></i>
                     <span>Community</span>

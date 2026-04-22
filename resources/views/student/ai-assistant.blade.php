@@ -36,8 +36,7 @@
                     <div class="flex-1 overflow-y-auto pb-2">
                         <div id="chat-thread" class="mx-auto flex max-w-4xl flex-col gap-4" data-chat-url="{{ route('student.ai-assistant.chat') }}">
                             <div class="flex items-end gap-3">
-                                <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
-                                <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
+                                            <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
                                     Hello, I’m your student assistant. Ask me about academic status, campus help, or student guidance.
                                 </div>
                             </div>
@@ -257,7 +256,6 @@
                 const wrapper = document.createElement('div');
                 wrapper.className = 'flex items-end gap-3';
                 wrapper.innerHTML = `
-                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
                     <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
                         ${escapeHtml(getWelcomeMessage(mode))}
                     </div>
@@ -290,10 +288,9 @@
                 const safeText = escapeHtml(text).replace(/\n/g, '<br>');
 
                 wrapper.innerHTML = `
-                    <div class="max-w-[82%] rounded-2xl rounded-br-md bg-slate-900 px-4 py-3 text-sm text-white shadow-sm">
+                    <div class="max-w-[85%] rounded-2xl rounded-br-md bg-slate-900 px-4 py-3 text-sm text-white shadow-sm">
                         ${safeText}
                     </div>
-                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-white">Me</div>
                 `;
 
                 chatThread.appendChild(wrapper);
@@ -367,8 +364,7 @@
                     : '';
 
                 wrapper.innerHTML = `
-                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
-                    <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
+                    <div class="max-w-[95%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
                         <div class="prose prose-sm max-w-none prose-slate">${contentParts.mainHtml}</div>
                         ${sourcesPanel}
                     </div>
@@ -388,7 +384,6 @@
                 wrapper.className = 'flex items-end gap-3';
 
                 wrapper.innerHTML = `
-                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
                     <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
                         <span class="inline-flex items-center gap-1">
                             <span>Thinking</span>
