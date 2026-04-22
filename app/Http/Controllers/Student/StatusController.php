@@ -217,6 +217,39 @@ class StatusController extends Controller
 
         $selectedSemesterSubjects = collect(data_get($selectedSemesterData, 'subjects', []))->values();
 
+        $currentTermSubjects = $selectedSemesterSubjects
+            ->map(function (array $subject) use ($selectedYear, $selectedSemester): array {
+                return [
+                    'subject' => (string) ($subject['subject'] ?? 'Unknown Subject'),
+                    'code' => (string) ($subject['code'] ?? 'N/A'),
+                    'score' => (int) ($subject['score'] ?? 0),
+                    'credit' => (int) ($subject['credit'] ?? 0),
+                    'year' => $selectedYear,
+                    'semester' => $selectedSemester,
+                ];
+            })
+            ->values();
+
+        $allTimeSubjects = $studentGrades
+            ->map(function (Grade $grade): array {
+                $subject = $grade->subject;
+
+                return [
+                    'subject' => $subject?->name ?? 'Unknown Subject',
+                    'code' => $subject?->code ?? 'N/A',
+                    'score' => (int) $grade->score,
+                    'credit' => (int) ($subject?->credit_hours ?? 0),
+                    'year' => (int) $grade->year,
+                    'semester' => $this->normalizeSemester((string) $grade->semester),
+                ];
+            })
+            ->sortBy(fn (array $subject): int => ($subject['year'] * 10) + ($subject['semester'] === 'Sem 1' ? 1 : 2))
+            ->values();
+
+        $performanceSource = $selectedView === 'all_time'
+            ? $allTimeSubjects
+            : $currentTermSubjects;
+
         $strongest = $selectedSemesterSubjects->sortByDesc('score')->first();
         $weakest = $selectedSemesterSubjects->sortBy('score')->first();
 
@@ -273,8 +306,23 @@ class StatusController extends Controller
         $trendLabels = $yearlyOverview->map(fn ($row): string => (string) ($row['year'] ?? ''))->values();
         $trendValues = $yearlyOverview->map(fn ($row): float => (float) ($row['year_gpa'] ?? 0.0))->values();
 
-        $performanceLabels = $selectedSemesterSubjects->map(fn (array $subject): string => (string) ($subject['subject'] ?? 'Subject'))->values();
-        $performanceValues = $selectedSemesterSubjects->map(fn (array $subject): int => (int) ($subject['score'] ?? 0))->values();
+        $performanceLabels = $performanceSource
+            ->map(fn (array $subject): string => (string) ($subject['code'] ?? 'N/A'))
+            ->values();
+        $performanceValues = $performanceSource->map(fn (array $subject): int => (int) ($subject['score'] ?? 0))->values();
+        $performanceDetails = $performanceSource
+            ->map(function (array $subject): array {
+                return [
+                    'name' => (string) ($subject['subject'] ?? 'Unknown Subject'),
+                    'score' => (int) ($subject['score'] ?? 0),
+                    'semester' => (string) ($subject['semester'] ?? 'Sem 1'),
+                    'year' => (int) ($subject['year'] ?? 0),
+                    'credit' => (int) ($subject['credit'] ?? 0),
+                ];
+            })
+            ->values();
+
+        $performanceScopeLabel = $selectedView === 'all_time' ? 'All Time' : 'Selected Semester';
 
         $semesterPanels = $semesterPanels
             ->map(function (array $panel): array {
@@ -335,6 +383,8 @@ class StatusController extends Controller
             'trendValues' => $trendValues,
             'performanceLabels' => $performanceLabels,
             'performanceValues' => $performanceValues,
+            'performanceDetails' => $performanceDetails,
+            'performanceScopeLabel' => $performanceScopeLabel,
             'selectedSemesterPanelTitle' => $termLabel.' '.$termYear,
         ]);
     }

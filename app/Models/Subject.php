@@ -17,11 +17,13 @@ class Subject extends Model
         'code',
         'credit_hours',
         'semester',
+        'year',
     ];
 
     protected $casts = [
         'credit_hours' => 'integer',
         'semester' => 'integer',
+        'year' => 'integer',
     ];
 
     public function grades(): HasMany

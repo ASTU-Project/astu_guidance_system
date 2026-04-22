@@ -36,6 +36,11 @@ class Student extends Authenticatable
         'password',
     ];
 
+    public function getSemesterNumberAttribute(): int
+    {
+        return str_contains($this->current_semester, 'II') ? 2 : 1;
+    }
+
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);
