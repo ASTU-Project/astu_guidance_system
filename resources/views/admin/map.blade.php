@@ -52,6 +52,7 @@
                     <thead>
                         <tr class="border-b border-slate-100 bg-slate-50/80 text-left">
                             <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Icon</th>
+                            <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Image</th>
                             <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Name</th>
                             <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Description</th>
                             <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Latitude</th>
@@ -66,7 +67,19 @@
                             <tr>
                                 <td class="px-5 py-4 text-sm text-slate-600">
                                     <i class="{{ $location->icon ?: 'fa fa-map-marker-alt' }} text-cyan-700"></i>
-                                </td>  
+                                </td>
+                                <td class="px-5 py-4 text-sm text-slate-600">
+                                    @if($location->image_url)
+                                        <img
+                                            src="{{ $location->image_url }}"
+                                            alt="{{ $location->name }}"
+                                            class="h-10 w-14 rounded-md object-cover border border-slate-200"
+                                            loading="lazy"
+                                        >
+                                    @else
+                                        <span class="text-xs text-slate-400">No image</span>
+                                    @endif
+                                </td>
                                 <td class="px-5 py-4 text-sm font-bold text-slate-600">{{$location->name}}</td>
                                 <td class="px-5 py-4 text-sm text-slate-600 ">{{$location->description}}</td>
                                 <td class="px-5 py-4 text-sm text-slate-600">{{$location->latitude}}</td>  
@@ -84,6 +97,7 @@
                                         data-longitude="{{ $location->longitude }}"
                                         data-category="{{ $location->category }}"
                                         data-icon="{{ $location->icon ?: 'fa fa-map-marker-alt' }}"
+                                        data-image-url="{{ $location->image_url }}"
                                     >
                                         <i class="fa fa-edit"></i>    
                                     </button>
@@ -98,7 +112,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-5 py-10 text-center text-sm text-slate-400">
+                                <td colspan="8" class="px-5 py-10 text-center text-sm text-slate-400">
                                     No map locations found.
                                 </td>
                             </tr>
@@ -107,8 +121,8 @@
                 </table>
             </div>
         </div>
-            </div>
-        <div id="map-location-modal" class="{{ $errors->any() || old('name') || old('latitude') ? '' : 'hidden' }} fixed inset-0 z-50 flex items-center justify-center px-4">
+    </div>
+        <div id="map-location-modal" class="{{ $errors->any() || old('name') || old('latitude') || old('image') ? '' : 'hidden' }} fixed inset-0 z-50 flex items-center justify-center px-4">
             <div class="absolute inset-0 bg-slate-950/50" onclick="document.getElementById('map-location-modal').classList.add('hidden')"></div>
             <div class="relative w-full max-w-lg rounded-md bg-white p-6 shadow-2xl">
                 <div class="flex items-start justify-between gap-4">
@@ -120,7 +134,7 @@
                     </button>
                 </div>
 
-                <form action="{{ route('admin.map.store') }}" method="POST" class="mt-5 space-y-4">
+                <form action="{{ route('admin.map.store') }}" method="POST" enctype="multipart/form-data" class="mt-5 space-y-4">
                     @csrf
                     <div>
                         <label for="location-name" class="mb-1 block text-sm font-medium text-slate-700">Location Name</label>
@@ -141,6 +155,21 @@
                     <div>
                         <label for="location-description" class="mb-1 block text-sm font-medium text-slate-700">Description</label>
                         <textarea id="location-description" name="description" rows="3" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="Short description of this place">{{ old('description') }}</textarea>
+                    </div>
+
+                    <div>
+                        <label for="location-image" class="mb-1 block text-sm font-medium text-slate-700">Location Image</label>
+                        <input id="location-image" type="file" name="image" accept="image/png,image/jpeg,image/webp" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-200 focus:border-slate-400 focus:outline-none">
+                        <p class="mt-1 text-[11px] text-slate-500">Accepted: JPG, PNG, WEBP (max 4MB)</p>
+                        <div id="selectedFileWrap" class="hidden mt-2 flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2">
+                                <div class="min-w-0">
+                                    <p id="selectedFileName" class="text-xs font-medium text-slate-700 truncate"></p>
+                                    <p id="selectedFileMeta" class="text-[11px] text-slate-500"></p>
+                                </div>
+                                <button type="button" id="clearPrescriptionButton" class="px-2 py-1 text-[11px] font-medium border border-slate-200 text-slate-600 rounded-md hover:bg-slate-50 transition">Remove</button>
+                           </div>
+
+                           <img src="" alt="Prescription preview" id="preview" class="hidden border border-slate-200 rounded-lg mt-2 object-cover" width="100px">
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -199,6 +228,7 @@
                     action="{{ route('admin.map.update', ['location' => '__ID__']) }}"
                     data-action-template="{{ route('admin.map.update', ['location' => '__ID__']) }}"
                     method="POST"
+                    enctype="multipart/form-data"
                     class="mt-5 space-y-4"
                 >
                     @csrf
@@ -223,6 +253,20 @@
                     <div>
                         <label for="update-location-description" class="mb-1 block text-sm font-medium text-slate-700">Description</label>
                         <textarea id="update-location-description" name="description" rows="3" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="Short description of this place"></textarea>
+                    </div>
+
+                    <div>
+                        <label for="update-location-image" class="mb-1 block text-sm font-medium text-slate-700">Replace Location Image</label>
+                        <input id="update-location-image" name="image" type="file" accept="image/png,image/jpeg,image/webp" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-200 focus:border-slate-400 focus:outline-none">
+                        <p class="mt-1 text-[11px] text-slate-500">Leave empty to keep current image.</p>
+                        <div id="updateSelectedFileWrap" class="hidden mt-2 flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2">
+                            <div class="min-w-0">
+                                <p id="updateSelectedFileName" class="text-xs font-medium text-slate-700 truncate"></p>
+                                <p id="updateSelectedFileMeta" class="text-[11px] text-slate-500"></p>
+                            </div>
+                            <button type="button" id="clearUpdateImageButton" class="px-2 py-1 text-[11px] font-medium border border-slate-200 text-slate-600 rounded-md hover:bg-slate-50 transition">Remove</button>
+                        </div>
+                        <img src="" alt="Image preview" id="updatePreview" class="hidden border border-slate-200 rounded-lg mt-2 object-cover" width="100px">
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -292,7 +336,64 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         .leaflet-popup-content-wrapper {
-            border-radius: 10px;
+            border-radius: 14px;
+            padding: 0;
+        }
+
+        .leaflet-popup-content {
+            margin: 0;
+            width: 280px !important;
+        }
+
+        .map-place-popup {
+            overflow: hidden;
+            border-radius: 14px;
+            background: #fff;
+        }
+
+        .map-place-popup__image {
+            height: 128px;
+            width: 100%;
+            object-fit: cover;
+            display: block;
+            background: #e2e8f0;
+        }
+
+        .map-place-popup__body {
+            padding: 10px 12px 12px;
+        }
+
+        .map-place-popup__title {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .map-place-popup__category {
+            display: inline-block;
+            margin-top: 6px;
+            border-radius: 9999px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #0e7490;
+            background: #ecfeff;
+            border: 1px solid #a5f3fc;
+        }
+
+        .map-place-popup__description {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.4;
+        }
+
+        .map-place-popup__coords {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #64748b;
         }
     </style>
 @endpush
@@ -302,11 +403,13 @@
     @php
         $campusLocations = $locations->map(function ($location) {
             return [
+                'id' => $location->id,
                 'name' => $location->name,
                 'description' => $location->description,
                 'latitude' => (float) $location->latitude,
                 'longitude' => (float) $location->longitude,
                 'category' => $location->category,
+                'image_url' => $location->image_url,
             ];
         })->values();
     @endphp
@@ -317,7 +420,44 @@
         let previewLayer = null;
         let previewDefaultTiles = null;
         let previewSatelliteTiles = null;
+        let previewSatelliteLabelTiles = null;
         let previewSatelliteEnabled = false;
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function resolveLocationImage(location) {
+            const image = String(location.image_url || '').trim();
+            if (image !== '') {
+                return image;
+            }
+
+            return 'https://picsum.photos/seed/campus-default/480/260';
+        }
+
+        function markerPopupHtml(location) {
+            const category = location.category || 'Campus Place';
+            const description = location.description || 'No description available.';
+            const imageUrl = resolveLocationImage(location);
+
+            return `
+                <div class="map-place-popup">
+                    <img class="map-place-popup__image" src="${imageUrl}" alt="${escapeHtml(location.name)}" loading="lazy">
+                    <div class="map-place-popup__body">
+                        <h4 class="map-place-popup__title">${escapeHtml(location.name)}</h4>
+                        <span class="map-place-popup__category">${escapeHtml(category)}</span>
+                        <div class="map-place-popup__description">${escapeHtml(description)}</div>
+                        <div class="map-place-popup__coords">${Number(location.latitude).toFixed(5)}, ${Number(location.longitude).toFixed(5)}</div>
+                    </div>
+                </div>
+            `;
+        }
 
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
@@ -352,6 +492,10 @@
                 document.getElementById('update-location-longitude').value = this.dataset.longitude || '';
                 document.getElementById('update-location-category').value = this.dataset.category || '';
                 document.getElementById('update-location-icon').value = this.dataset.icon || 'fa fa-map-marker-alt';
+                const updateImageInput = document.getElementById('update-location-image');
+                if (updateImageInput) {
+                    updateImageInput.value = '';
+                }
 
                 document.getElementById('map-location-update-modal').classList.remove('hidden');
             });
@@ -368,14 +512,21 @@
                     zoomControl: true,
                 });
 
-                previewDefaultTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '&copy; OpenStreetMap contributors',
+                previewDefaultTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                    maxZoom: 20,
+                    subdomains: 'abcd',
+                    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
                 });
 
                 previewSatelliteTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                     maxZoom: 19,
                     attribution: 'Tiles &copy; Esri',
+                });
+
+                previewSatelliteLabelTiles = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 19,
+                    attribution: 'Labels &copy; Esri',
+                    pane: 'overlayPane',
                 });
 
                 previewDefaultTiles.addTo(previewMap);
@@ -393,7 +544,7 @@
                     bounds.push(latLng);
 
                     L.marker(latLng)
-                        .bindPopup('<strong>' + location.name + '</strong><br>' + (location.description || 'No description'))
+                        .bindPopup(markerPopupHtml(location))
                         .addTo(previewLayer);
                 });
 
@@ -410,7 +561,7 @@
         function togglePreviewSatellite() {
             const button = document.getElementById('preview-satellite-toggle');
 
-            if (!previewMap || !previewDefaultTiles || !previewSatelliteTiles || !button) {
+            if (!previewMap || !previewDefaultTiles || !previewSatelliteTiles || !previewSatelliteLabelTiles || !button) {
                 return;
             }
 
@@ -419,9 +570,11 @@
             if (previewSatelliteEnabled) {
                 previewMap.removeLayer(previewDefaultTiles);
                 previewSatelliteTiles.addTo(previewMap);
+                previewSatelliteLabelTiles.addTo(previewMap);
                 button.textContent = 'Map';
             } else {
                 previewMap.removeLayer(previewSatelliteTiles);
+                previewMap.removeLayer(previewSatelliteLabelTiles);
                 previewDefaultTiles.addTo(previewMap);
                 button.textContent = 'Satellite';
             }
@@ -468,6 +621,64 @@
                     previewMap.invalidateSize();
                 }
             }, 80);
+        });
+
+        // image preview section
+        function toFileSize(bytes) {
+            if (!bytes) return '0 KB';
+            return bytes < 1024 * 1024
+                ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+                : `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+        }
+
+        function initImagePreview(inputId, previewId, fileWrapId, fileNameId, fileMetaId, clearBtnId) {
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+            const fileWrap = document.getElementById(fileWrapId);
+            const fileName = document.getElementById(fileNameId);
+            const fileMeta = document.getElementById(fileMetaId);
+            const clearBtn = document.getElementById(clearBtnId);
+
+            if (!input || !preview || !fileWrap || !fileName || !fileMeta || !clearBtn) return;
+
+            let objectUrl = null;
+
+            function reset(clearInput = false) {
+                if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+                preview.src = '';
+                preview.classList.add('hidden');
+                fileWrap.classList.add('hidden');
+                fileName.textContent = '';
+                fileMeta.textContent = '';
+                if (clearInput) input.value = '';
+            }
+
+            function apply(file) {
+                if (!file) { reset(); return; }
+                reset();
+                fileName.textContent = file.name;
+                fileMeta.textContent = `${file.type || 'Image'} - ${toFileSize(file.size)}`;
+                fileWrap.classList.remove('hidden');
+                objectUrl = URL.createObjectURL(file);
+                preview.src = objectUrl;
+                preview.classList.remove('hidden');
+            }
+
+            input.addEventListener('change', function () { apply(this.files[0] || null); });
+            clearBtn.addEventListener('click', function () { reset(true); });
+        }
+
+        initImagePreview('location-image', 'preview', 'selectedFileWrap', 'selectedFileName', 'selectedFileMeta', 'clearPrescriptionButton');
+        initImagePreview('update-location-image', 'updatePreview', 'updateSelectedFileWrap', 'updateSelectedFileName', 'updateSelectedFileMeta', 'clearUpdateImageButton');
+
+        // reset update preview when edit modal opens
+        document.querySelectorAll('[data-edit-map]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const updatePreview = document.getElementById('updatePreview');
+                const updateFileWrap = document.getElementById('updateSelectedFileWrap');
+                if (updatePreview) { updatePreview.src = ''; updatePreview.classList.add('hidden'); }
+                if (updateFileWrap) updateFileWrap.classList.add('hidden');
+            });
         });
     </script>
 @endpush

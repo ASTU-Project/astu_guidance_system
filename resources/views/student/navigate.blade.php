@@ -71,7 +71,64 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         .leaflet-popup-content-wrapper {
-            border-radius: 10px;
+            border-radius: 5px;
+            padding: 0;
+        }
+
+        .leaflet-popup-content {
+            margin: 0;
+            width: 280px !important;
+        }
+
+        .map-place-popup {
+            overflow: hidden;
+            border-radius: 5px;
+            background: #fff;
+        }
+
+        .map-place-popup__image {
+            height: 128px;
+            width: 100%;
+            object-fit: cover;
+            display: block;
+            background: #e2e8f0;
+        }
+
+        .map-place-popup__body {
+            padding: 10px 12px 12px;
+        }
+
+        .map-place-popup__title {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .map-place-popup__category {
+            display: inline-block;
+            margin-top: 6px;
+            border-radius: 9999px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #0e7490;
+            background: #ecfeff;
+            border: 1px solid #a5f3fc;
+        }
+
+        .map-place-popup__description {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.4;
+        }
+
+        .map-place-popup__coords {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #64748b;
         }
 
         .location-item-active {
@@ -92,6 +149,7 @@
                 'longitude' => (float) $location->longitude,
                 'category' => $location->category,
                 'icon' => $location->icon ?: 'fa fa-map-marker-alt',
+                'image_url' => $location->image_url,
             ];
         })->values();
     @endphp
@@ -102,9 +160,28 @@
         let studentMarkerLayer = null;
         let studentDefaultTiles = null;
         let studentSatelliteTiles = null;
+        let studentSatelliteLabelTiles = null;
         let studentSatelliteEnabled = false;
         let activeMarkerById = {};
         let filteredLocations = [...allLocations];
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function resolveLocationImage(location) {
+            const image = String(location.image_url || '').trim();
+            if (image !== '') {
+                return image;
+            }
+
+            return 'https://picsum.photos/seed/campus-default/480/260';
+        }
 
         function buildStudentMap() {
             if (studentMap) {
@@ -115,9 +192,10 @@
                 zoomControl: true,
             });
 
-            studentDefaultTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors',
+            studentDefaultTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 20,
+                subdomains: 'abcd',
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
             });
 
             studentSatelliteTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -125,16 +203,30 @@
                 attribution: 'Tiles &copy; Esri',
             });
 
+            studentSatelliteLabelTiles = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: 'Labels &copy; Esri',
+                pane: 'overlayPane',
+            });
+
             studentDefaultTiles.addTo(studentMap);
             studentMarkerLayer = L.layerGroup().addTo(studentMap);
         }
 
         function markerPopupHtml(location) {
+            const category = location.category || 'Campus Place';
+            const description = location.description || 'No description available.';
+            const imageUrl = resolveLocationImage(location);
+
             return `
-                <div class="space-y-1">
-                    <div class="font-semibold text-slate-800">${location.name}</div>
-                    <div class="text-xs text-slate-600">${location.category || 'Uncategorized'}</div>
-                    <div class="text-xs text-slate-500">${location.description || 'No description available.'}</div>
+                <div class="map-place-popup">
+                    <img class="map-place-popup__image" src="${imageUrl}" alt="${escapeHtml(location.name)}" loading="lazy">
+                    <div class="map-place-popup__body">
+                        <h4 class="map-place-popup__title">${escapeHtml(location.name)}</h4>
+                        <span class="map-place-popup__category">${escapeHtml(category)}</span>
+                        <div class="map-place-popup__description">${escapeHtml(description)}</div>
+                        <div class="map-place-popup__coords">${Number(location.latitude).toFixed(5)}, ${Number(location.longitude).toFixed(5)}</div>
+                    </div>
                 </div>
             `;
         }
@@ -257,7 +349,7 @@
         function toggleStudentSatellite() {
             const button = document.getElementById('student-toggle-satellite');
 
-            if (!studentMap || !studentDefaultTiles || !studentSatelliteTiles || !button) {
+            if (!studentMap || !studentDefaultTiles || !studentSatelliteTiles || !studentSatelliteLabelTiles || !button) {
                 return;
             }
 
@@ -266,9 +358,11 @@
             if (studentSatelliteEnabled) {
                 studentMap.removeLayer(studentDefaultTiles);
                 studentSatelliteTiles.addTo(studentMap);
+                studentSatelliteLabelTiles.addTo(studentMap);
                 button.textContent = 'Map';
             } else {
                 studentMap.removeLayer(studentSatelliteTiles);
+                studentMap.removeLayer(studentSatelliteLabelTiles);
                 studentDefaultTiles.addTo(studentMap);
                 button.textContent = 'Satellite';
             }

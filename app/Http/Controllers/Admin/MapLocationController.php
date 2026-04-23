@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\MapLocation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class MapLocationController extends Controller
 {
@@ -23,7 +25,14 @@ class MapLocationController extends Controller
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'category' => ['required', 'string', 'max:100'],
             'icon' => ['nullable', 'string', 'max:100'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
+
+        if ($request->hasFile('image')) {
+            $validated['image_url'] = $request->file('image')->store('map-locations', 'public');
+        }
+
+        unset($validated['image']);
 
         MapLocation::create($validated);
 
@@ -40,7 +49,19 @@ class MapLocationController extends Controller
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'category' => ['required', 'string', 'max:100'],
             'icon' => ['nullable', 'string', 'max:100'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
+
+        if ($request->hasFile('image')) {
+            $oldImage = (string) $location->getRawOriginal('image_url');
+            if ($oldImage !== '' && ! Str::startsWith($oldImage, ['http://', 'https://'])) {
+                Storage::disk('public')->delete($oldImage);
+            }
+
+            $validated['image_url'] = $request->file('image')->store('map-locations', 'public');
+        }
+
+        unset($validated['image']);
 
         $location->update($validated);
 
@@ -50,6 +71,11 @@ class MapLocationController extends Controller
     }
 
     public function destroy(MapLocation $location) {
+        $oldImage = (string) $location->getRawOriginal('image_url');
+        if ($oldImage !== '' && ! Str::startsWith($oldImage, ['http://', 'https://'])) {
+            Storage::disk('public')->delete($oldImage);
+        }
+
         $location->delete();
 
         return redirect()
