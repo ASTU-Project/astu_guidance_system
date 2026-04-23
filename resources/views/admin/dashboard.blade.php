@@ -75,31 +75,6 @@
                     </div>
                 </div>
                 
-                <div class="rounded-md bg-white border border-slate-200 p-6 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-lg font-semibold text-slate-950">Recent messages</h3>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 space-y-4">
-                        <div class="rounded-md bg-slate-50 p-4 border border-slate-200">
-                            <p class="text-sm font-semibold text-slate-900">Samuel Muluken</p>
-                            <p class="mt-1 text-sm text-slate-500">Lorem, ipsum dolor sit amet consectetur adipisi...</p>
-                            <p class="mt-1 text-xs text-slate-400">10 minutes ago</p>
-                        </div>
-                        <div class="rounded-md bg-slate-50 p-4 border border-slate-200">
-                            <p class="text-sm font-semibold text-slate-900">Samuel Muluken</p>
-                            <p class="mt-1 text-sm text-slate-500">Lorem, ipsum dolor sit amet consectetur adipisi...</p>
-                            <p class="mt-1 text-xs text-slate-400">10 minutes ago</p>
-                        </div>
-                        <div class="rounded-md bg-slate-50 p-4 border border-slate-200">
-                            <p class="text-sm font-semibold text-slate-900">Samuel Muluken</p>
-                            <p class="mt-1 text-sm text-slate-500">Lorem, ipsum dolor sit amet consectetur adipisi...</p>
-                            <p class="mt-1 text-xs text-slate-400">10 minutes ago</p>
-                        </div>
-                    </div>
-                </div>
 
             </div>
         </div>

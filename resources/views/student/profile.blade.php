@@ -25,6 +25,11 @@
                 </div>
 
                 <div>
+                    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Current Year</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-900">{{ $student->current_year ?? 'N/A' }}</p>
+                </div>
+
+                <div>
                     <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Current Semester</p>
                     <p class="mt-1 text-sm font-semibold text-slate-900">{{ $student->current_semester ?? 'N/A' }}</p>
                 </div>
@@ -32,11 +37,6 @@
                 <div>
                     <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Current Section</p>
                     <p class="mt-1 text-sm font-semibold text-slate-900">{{ $student->current_section ?? 'N/A' }}</p>
-                </div>
-
-                <div>
-                    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">CGPA</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-900">{{ $student->cgpa !== null ? number_format((float) $student->cgpa, 2) : 'N/A' }}</p>
                 </div>
             </div>
         </div>

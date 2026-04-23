@@ -170,7 +170,7 @@
 
     <div
         id="calendar-form-modal"
-        class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 p-4"
+        class="fixed inset-0 z-0 hidden items-center justify-center bg-slate-950/60 p-4"
         role="dialog"
         aria-modal="true"
         aria-labelledby="calendar-form-title"
@@ -189,7 +189,7 @@
                 @php($selectedCreateColor = old('color', '#083D77'))
                 @php($selectedEventId = old('event_id'))
                 <input type="hidden" id="calendarFormMethod" name="_method" value="">
-                <div class="grid gap-0 xl:grid-cols-[1fr_0.9fr]">
+                <div class="">
                     <div class="border-b border-slate-200 p-5 xl:border-b-0 xl:border-r sm:p-6">
                         <div class="space-y-4">
                             <input type="hidden" id="calendarFormEventId" name="event_id" value="{{ $selectedEventId }}">
@@ -233,31 +233,18 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-50 p-5 sm:p-6">
-                        <div class="space-y-4">
-                            <div>
-                                <label class="mb-1.5 block text-sm font-medium text-slate-700">Color</label>
-                                <input id="calendarFormColor" name="color" type="hidden" value="{{ $selectedCreateColor }}">
-                                <div class="flex flex-wrap gap-3">
-                                    <button type="button" class="create-color-swatch h-10 w-10 rounded-md {{ $selectedCreateColor === '#083D77' ? 'ring-2 ring-offset-2 ring-offset-white' : '' }}" data-color="#083D77" style="background-color:#083D77; --tw-ring-color:#083D77"></button>
-                                    <button type="button" class="create-color-swatch h-10 w-10 rounded-md {{ $selectedCreateColor === '#0CCE6B' ? 'ring-2 ring-offset-2 ring-offset-white' : '' }}" data-color="#0CCE6B" style="background-color:#0CCE6B"></button>
-                                    <button type="button" class="create-color-swatch h-10 w-10 rounded-md {{ $selectedCreateColor === '#DCED31' ? 'ring-2 ring-offset-2 ring-offset-white' : '' }}" data-color="#DCED31" style="background-color:#DCED31"></button>
-                                    <button type="button" class="create-color-swatch h-10 w-10 rounded-md {{ $selectedCreateColor === '#EF2D56' ? 'ring-2 ring-offset-2 ring-offset-white' : '' }}" data-color="#EF2D56" style="background-color:#EF2D56"></button>
-                                    <button type="button" class="create-color-swatch h-10 w-10 rounded-md {{ $selectedCreateColor === '#ED7D3A' ? 'ring-2 ring-offset-2 ring-offset-white' : '' }}" data-color="#ED7D3A" style="background-color:#ED7D3A"></button>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="mb-1.5 block text-sm font-medium text-slate-700">Color</label>
+                                    <input id="calendarFormColor" name="color" type="hidden" value="{{ $selectedCreateColor }}">
+                                    <div class="flex flex-wrap gap-3">
+                                        <button type="button" class="create-color-swatch h-5 w-5 rounded-md {{ $selectedCreateColor === '#083D77' ? 'ring-2 ring-offset-2 ring-offset-white' : '' }}" data-color="#083D77" style="background-color:#083D77; --tw-ring-color:#083D77"></button>
+                                        <button type="button" class="create-color-swatch h-5 w-5 rounded-md {{ $selectedCreateColor === '#0CCE6B' ? 'ring-2 ring-offset-2 ring-offset-white' : '' }}" data-color="#0CCE6B" style="background-color:#0CCE6B"></button>
+                                        <button type="button" class="create-color-swatch h-5 w-5 rounded-md {{ $selectedCreateColor === '#DCED31' ? 'ring-2 ring-offset-2 ring-offset-white' : '' }}" data-color="#DCED31" style="background-color:#DCED31"></button>
+                                        <button type="button" class="create-color-swatch h-5 w-5 rounded-md {{ $selectedCreateColor === '#EF2D56' ? 'ring-2 ring-offset-2 ring-offset-white' : '' }}" data-color="#EF2D56" style="background-color:#EF2D56"></button>
+                                        <button type="button" class="create-color-swatch h-5 w-5 rounded-md {{ $selectedCreateColor === '#ED7D3A' ? 'ring-2 ring-offset-2 ring-offset-white' : '' }}" data-color="#ED7D3A" style="background-color:#ED7D3A"></button>
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div id="popupEventPreview" class="rounded-lg px-4 py-3 text-white shadow-sm" style="background-color:#083D77">
-                                <div id="popupEventPreviewTitle" class="text-sm font-semibold">Applied Maths I</div>
-                                <div id="popupEventPreviewMeta" class="mt-1 text-xs text-white/85">Mon • 01:00 - 01:40</div>
-                                <div id="popupEventPreviewHint" class="mt-2 text-xs text-white/75">Choose a color and keep an eye on overnight events.</div>
-                            </div>
-
-                            <div class="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
-                                Only your events can be edited. Shared or admin events are read-only.
                             </div>
                         </div>
                     </div>
