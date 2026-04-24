@@ -90,33 +90,4 @@ Grade scale:
 ### Community & Department Guide
 - Static informational pages at `/student/community` and `/student/department-guide`
 
-## Data Models
 
-| Model | Key Fields |
-|-------|-----------|
-| Student | name, student_id, email, phone, department, current_year, current_semester, current_section, cgpa |
-| Department | name, code, spot_limit, min_gpa |
-| EventBase | department, semester, section |
-| Event | event_id, task, day, event_date, start_hour, start_min, end_hour, end_min, color, source, student_id |
-| Grade | student_id, subject_id, score, year, semester |
-| Subject | name, code, credit_hours, year |
-| MapLocation | name, description, latitude, longitude, category, icon, image_url |
-| Policy | title, category, content, is_active |
-| ChatMessage | user_id, session_id, role, content |
-| AutomationSetting | user_id, enabled tool group flags |
-
-## Project Status
-
-| Feature | Status |
-|---------|--------|
-| Admin dashboard | ✅ Complete |
-| Student academic status | ✅ Complete |
-| Calendar (admin + student) | ✅ Complete |
-| Campus map | ✅ Complete |
-| Policy CRUD | ✅ Complete |
-| Admin automation chat | ✅ Complete |
-| Student AI assistant | ✅ Complete |
-| Student / admin profiles | ✅ Complete |
-| Student CRUD | 🚧 Scaffolded, not implemented |
-| Department creation | 🚧 Scaffolded, disabled |
-| Community & Department Guide | 🚧 Static placeholders |
