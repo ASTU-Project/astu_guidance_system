@@ -1,64 +1,64 @@
 # ASTU Management System
 
-A university management platform built with Laravel 13, Blade, Tailwind CSS, and Vite. It handles student records, departments, academic status tracking, schedules, campus navigation, policies, and AI-powered automation workflows.
+A university management platform for Adama Science and Technology University. It handles student records, departments, academic status tracking, schedules, campus navigation, policies, and AI-powered automation workflows.
 
 ## Tech Stack
 
 - PHP 8.3 / Laravel 13
 - Blade templates + Tailwind CSS 3
-- Vite + React (Inertia.js available)
-- Laravel Sanctum (API tokens)
+- Vite
+- Laravel Sanctum
 - Laravel MCP
-- Pest (testing)
-- SQLite (default database)
+- SQLite
 
-## Main Modules
+## Modules
 
 ### Authentication
-- Separate login flows for admin (`/admin/login`) and students (`/login`)
-- Guard-based access control: `auth:web` for admin, `auth:student` for students
+- Separate login flows for admins (`/admin/login`) and students (`/login`)
+- Guard-based access control: `auth:web` for admins, `auth:student` for students
 
 ### Admin Dashboard (`/admin`)
-- Overview cards: total students, departments, calendar bases
+- Overview cards: total students, total departments, total calendar bases
 - Top 3 departments by student count with percentage share
-- Historical average GPA chart (by academic year)
+- Historical average GPA chart grouped by academic year
 
-### Students Management (`/admin/students`)
+### Students (`/admin/students`)
 - Paginated listing with search by name or student ID
 - Filter by department and year level
-- Student model fields: name, student_id, phone, email, department, current_semester, current_year, current_section, cgpa
+- Fields: name, student_id, phone, email, department, current_semester, current_year, current_section, cgpa
+- Create / edit / delete is scaffolded but not yet implemented
 
-### Departments Management (`/admin/departments`)
-- Department directory with live student count per department
-- Department model fields: name, code, spot_limit, min_gpa
-- Department creation is scaffolded but currently disabled (commented out)
+### Departments (`/admin/departments`)
+- Lists all departments with live student count
+- Fields: name, code, spot_limit, min_gpa
+- Department creation is scaffolded but disabled
 
-### Calendar Management (`/admin/calendar`)
+### Calendar (`/admin/calendar`, `/student/calendar`)
 - Admin creates calendar bases (EventBase) scoped to department + semester + section
-- Admin adds, edits events per base (`/admin/calendar/Events/{id}`)
+- Admin adds and edits events per base
 - Students view their matched calendar base and add personal events
 - Events support weekly recurring (day-based) and specific-date modes
 - Overlap detection prevents conflicting time slots
 - 5 color options per event
 
-### Campus Map (`/admin/map`)
-- Admin manages map locations: name, description, lat/lng, category, icon, optional image upload
-- Students view locations on the navigate page (`/student/navigate`)
+### Campus Map (`/admin/map`, `/student/navigate`)
+- Admin manages map locations: name, description, lat/lng, category, icon, optional image
+- Students view all locations on an interactive map
 
 ### Policy Rules (`/admin/policy`)
-- Admin creates, updates, and deletes policy entries (title, category, content, active flag)
-- Policies are surfaced to students via the AI assistant tool
+- Admin creates, updates, and deletes policy entries: title, category, content, active flag
+- Active policies are surfaced to students through the AI assistant
 
-### Academic Status — Student Side (`/student/status`)
+### Academic Status (`/student/status`)
 - Semester GPA and cumulative GPA computed from Grade records with credit-hour weighting
 - Year-level overview table: Sem 1 GPA, Sem 2 GPA, year GPA, CGPA, delta vs previous year
-- Cohort rank and percentile within same department + year level
-- Standing labels: Excellent Standing (≥ 3.5), Good Standing (≥ 2.0), At Risk
+- Cohort rank and percentile within the same department and year level
+- Standing: Excellent Standing (≥ 3.5), Good Standing (≥ 2.0), At Risk
 - Performance category: Excellent (top 20%), Good (top 50%), Needs Improvement
-- Subject performance chart (current semester or all-time toggle)
+- Subject performance chart with current-semester or all-time toggle
 - Yearly GPA trend chart
 - Semester panels listing all subjects with score, letter grade, and credit hours
-- Filters: year, semester (Sem 1 / Sem 2), view mode (Current / All Time)
+- Filters: year, semester (Sem 1 / Sem 2), view mode
 
 Grade scale:
 
@@ -75,94 +75,48 @@ Grade scale:
 | < 50  | 0.0    | F      |
 
 ### Admin Automation Chat (`/admin/automate`)
-- LLM-powered chat (Cerebras backend) with tool-calling support
-- Tools enabled per user automation settings (departments, students, policies, etc.)
-- Session memory via ChatMessage records
+- LLM-powered chat using the Cerebras backend with tool-calling support
+- Tools toggled per admin via AutomationSettings (departments, students, policies, etc.)
+- Session memory stored in ChatMessage records
 - In-flight lock prevents duplicate concurrent requests
-- Configurable via AutomationSettings per admin user
 
 ### Student AI Assistant (`/student/ai-assistant`)
-- Two modes: **assistant** (LLM with department_list and policy_list tools) and **guide** (external Academic Guide service via HTTP)
-- Guide mode supports conversation history (last 4 turns) and returns cited sources
-- Assistant mode uses the same Cerebras LLM backend as admin chat
+- **Assistant mode** — LLM chat with access to department_list and policy_list tools
+- **Guide mode** — forwards the question to an external Academic Guide microservice, returns the answer with cited sources and supports conversation history (last 4 turns)
 
-### Student Profile & Admin Profile
-- Update display name / email
-- Change password (separate form)
+### Profiles
+- Admin and student profiles each support updating name/email and changing password via separate forms
 
 ### Community & Department Guide
-- Static pages available at `/student/community` and `/student/department-guide`
+- Static informational pages at `/student/community` and `/student/department-guide`
 
-## Getting Started
+## Data Models
 
-```bash
-composer install
-npm install
-cp .env.example .env
-php artisan key:generate
-touch database/database.sqlite   # if not present
-php artisan migrate
-php artisan db:seed
-npm run dev
-php artisan serve
-```
-
-Or use the composer shortcut:
-
-```bash
-composer setup
-composer dev   # starts server, queue worker, and Vite concurrently
-```
-
-## Environment Variables
-
-Key values to configure in `.env`:
-
-```
-APP_URL=http://localhost:8000
-DB_CONNECTION=sqlite
-
-# LLM provider for admin automation and student assistant
-CEREBRAS_API_KEY=
-# or configure via services.cerebras.key
-
-# Academic Guide microservice (student guide mode)
-ACADEMIC_GUIDE_ENDPOINT=http://127.0.0.1:8000/v1/chat
-ACADEMIC_GUIDE_TOP_K=5
-ACADEMIC_GUIDE_TIMEOUT=180
-```
-
-## Default Seed Account
-
-```
-Email:    test@example.com
-Password: password
-```
-
-## Running Tests
-
-```bash
-composer test
-# or
-php artisan test
-```
-
-Tests use Pest. Unit tests are in `tests/Unit/`, feature tests in `tests/Feature/`.
+| Model | Key Fields |
+|-------|-----------|
+| Student | name, student_id, email, phone, department, current_year, current_semester, current_section, cgpa |
+| Department | name, code, spot_limit, min_gpa |
+| EventBase | department, semester, section |
+| Event | event_id, task, day, event_date, start_hour, start_min, end_hour, end_min, color, source, student_id |
+| Grade | student_id, subject_id, score, year, semester |
+| Subject | name, code, credit_hours, year |
+| MapLocation | name, description, latitude, longitude, category, icon, image_url |
+| Policy | title, category, content, is_active |
+| ChatMessage | user_id, session_id, role, content |
+| AutomationSetting | user_id, enabled tool group flags |
 
 ## Project Status
 
-- Core admin and student modules are operational
-- Academic status flow is fully controller-driven with weighted GPA calculation
-- Calendar overlap detection is active for both recurring and date-specific events
-- Campus map with image upload is functional
-- Policy CRUD is complete
-- Department creation is scaffolded but disabled pending validation UI
-- Student CRUD (create/edit/delete) is scaffolded but not yet implemented
-- Community and Department Guide pages are static placeholders
-
-## Maintainer Notes
-
-- Academic rules follow ASTU two-semester structure (Sem 1 / Sem 2)
-- GPA calculation lives in `StatusController` — keep it as the single source of truth
-- Calendar base matching uses department + semester + section from the Student model
-- Blade templates receive pre-computed data from controllers; avoid logic in views
+| Feature | Status |
+|---------|--------|
+| Admin dashboard | ✅ Complete |
+| Student academic status | ✅ Complete |
+| Calendar (admin + student) | ✅ Complete |
+| Campus map | ✅ Complete |
+| Policy CRUD | ✅ Complete |
+| Admin automation chat | ✅ Complete |
+| Student AI assistant | ✅ Complete |
+| Student / admin profiles | ✅ Complete |
+| Student CRUD | 🚧 Scaffolded, not implemented |
+| Department creation | 🚧 Scaffolded, disabled |
+| Community & Department Guide | 🚧 Static placeholders |
