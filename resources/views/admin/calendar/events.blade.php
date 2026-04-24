@@ -26,8 +26,12 @@
                             <button type="button" id="todayWeekBtn" class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Today</button>
                             <button type="button" id="nextWeekBtn" class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50">›</button>
                         </div>
-                        <div>
+                        <div class="flex items-center gap-3">
                             <div id="staticDateRange">May 18 – May 24, 2026</div>
+                            <button type="button" id="toggleAllHoursBtn" title="Expand / Collapse all hours" class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 flex items-center gap-1">
+                                <span id="toggleAllIcon">⊞</span>
+                                <span id="toggleAllLabel">Expand</span>
+                            </button>
                         </div>
                     </div>
 
@@ -294,6 +298,23 @@
             line-height: 1.2;
         }
 
+        .calendar-hour-toggle {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .calendar-hour-toggle:hover {
+            background: rgb(241 245 249);
+        }
+
+        .calendar-subslots {
+            display: none;
+        }
+
+        .calendar-subslots.expanded {
+            display: block;
+        }
+
     </style>
 @endpush
 
@@ -303,6 +324,10 @@
         const baseWeekStart = new Date('2026-05-18T00:00:00');
         let currentWeekOffset = 0;
         const calendarEvents = @json($calendarEvents ?? []);
+        const HOUR_ROW_HEIGHT = 28;
+        const TEN_MIN_ROW_HEIGHT = 28;
+        const DAY_NAMES = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        let allExpanded = false;
 
         function padTime(value) {
             return String(value).padStart(2, '0');
@@ -310,10 +335,6 @@
 
         function formatTime(hour, minute) {
             return `${padTime(hour)}:${padTime(minute)}`;
-        }
-
-        function eventDuration(event) {
-            return ((event.endHour * 60 + event.endMin) - (event.startHour * 60 + event.startMin)) / 10;
         }
 
         function getStartOfWeek(date) {
@@ -334,14 +355,18 @@
 
         function buildSlots() {
             const slots = [];
-
             for (let hour = 1; hour < 24; hour++) {
-                for (let minute = 0; minute < 60; minute += 10) {
-                    slots.push({ hour, minute });
-                }
+                slots.push({ hour, minute: 0 });
             }
-
             return slots;
+        }
+
+        function buildSubSlots(hour) {
+            const subs = [];
+            for (let minute = 10; minute < 60; minute += 10) {
+                subs.push({ hour, minute });
+            }
+            return subs;
         }
 
         function getWeekDates(offset) {
@@ -362,6 +387,48 @@
 
         function toIsoDate(date) {
             return `${date.getFullYear()}-${padTime(date.getMonth() + 1)}-${padTime(date.getDate())}`;
+        }
+
+        function getEventHeights(durationMins) {
+            const safeDuration = Math.max(10, durationMins);
+
+            return {
+                collapsed: Math.max(24, Math.round(safeDuration * (HOUR_ROW_HEIGHT / 60)) - 4),
+                expanded: Math.max(24, Math.round(safeDuration * (TEN_MIN_ROW_HEIGHT / 10)) - 4),
+            };
+        }
+
+        function updateToggleAllButton() {
+            const icon = document.getElementById('toggleAllIcon');
+            const label = document.getElementById('toggleAllLabel');
+
+            if (icon) {
+                icon.textContent = allExpanded ? '⊟' : '⊞';
+            }
+
+            if (label) {
+                label.textContent = allExpanded ? 'Collapse' : 'Expand';
+            }
+        }
+
+        function getMatchingEvent(slot, dayIndex, currentIsoDate, expanded) {
+            return calendarEvents.find((item) => {
+                if (item.eventDate) {
+                    return item.eventDate === currentIsoDate
+                        && item.startHour === slot.hour
+                        && item.startMin === slot.minute;
+                }
+
+                if (item.day !== dayIndex) {
+                    return false;
+                }
+
+                if (expanded) {
+                    return item.startHour === slot.hour && item.startMin === slot.minute;
+                }
+
+                return item.startHour === slot.hour;
+            });
         }
 
         function renderCalendarPreview() {
@@ -389,53 +456,59 @@
                 </div>
             `;
 
+            function renderSlotCells(slot, weekDates, todayIndex, expanded) {
+            return calendarDays.map((day, dayIndex) => {
+                const currentIsoDate = toIsoDate(weekDates[dayIndex]);
+                const event = getMatchingEvent(slot, dayIndex, currentIsoDate, expanded);
+                const slotClass = dayIndex === todayIndex ? 'calendar-preview-slot calendar-today-col' : 'calendar-preview-slot';
+                if (!event) return `<div class="${slotClass}"></div>`;
+
+                const durationMins = Math.max(10, (event.endHour * 60 + event.endMin) - (event.startHour * 60 + event.startMin));
+                const { collapsed, expanded: expandedHeight } = getEventHeights(durationMins);
+                const currentH = expanded ? expandedHeight : collapsed;
+
+                const eventClass = event.muted ? 'calendar-event-card muted' : 'calendar-event-card default-tone';
+                const eventStyle = event.muted ? '' : `background-color:${event.tone || '#083D77'};`;
+                const eventPayload = encodeURIComponent(JSON.stringify(event));
+                return `<div class="${slotClass}"><button type="button" class="${eventClass} js-event-card" data-event="${eventPayload}" data-collapsed-h="${collapsed}" data-expanded-h="${expandedHeight}" style="height:${currentH}px;${eventStyle}"><div class="calendar-event-title">${event.title}</div></button></div>`;
+            }).join('');
+            }
+
             const body = slots.map((slot) => {
-                const rowCells = calendarDays.map((day, dayIndex) => {
-                    const currentDate = weekDates[dayIndex];
-                    const currentIsoDate = toIsoDate(currentDate);
+                const subSlots = buildSubSlots(slot.hour);
+                const hourId = `hour-subs-${slot.hour}`;
 
-                    const event = calendarEvents.find((item) => {
-                        const timeMatch = item.startHour === slot.hour && item.startMin === slot.minute;
-
-                        if (!timeMatch) {
-                            return false;
-                        }
-
-                        if (item.eventDate) {
-                            return item.eventDate === currentIsoDate;
-                        }
-
-                        return item.day === dayIndex;
-                    });
-                    const slotClass = dayIndex === todayIndex ? 'calendar-preview-slot calendar-today-col' : 'calendar-preview-slot';
-
-                    if (!event) {
-                        return `<div class="${slotClass}"></div>`;
-                    }
-
-                    const height = Math.max(1, eventDuration(event)) * 28;
-                    const eventClass = event.muted ? 'calendar-event-card muted' : 'calendar-event-card default-tone';
-                    const eventStyle = event.muted ? '' : `background-color:${event.tone || '#083D77'};`;
-                    const eventPayload = encodeURIComponent(JSON.stringify(event));
-
-                    return `
-                        <div class="${slotClass}">
-                            <button type="button" class="${eventClass} js-event-card" data-event="${eventPayload}" style="height:${Math.max(26, height - 4)}px;${eventStyle}">
-                                <div class="calendar-event-title">${event.title}</div>
-                            </button>
-                        </div>
-                    `;
-                });
+                const subRows = subSlots.map((sub) => `
+                    <div class="calendar-preview-grid">
+                        <div class="calendar-preview-hour">&nbsp;</div>
+                        ${renderSlotCells(sub, weekDates, todayIndex, true)}
+                    </div>
+                `).join('');
 
                 return `
-                    <div class="calendar-preview-grid">
-                        <div class="calendar-preview-hour">${slot.minute === 0 ? formatTime(slot.hour, 0) : '&nbsp;'}</div>
-                        ${rowCells.join('')}
+                    <div class="calendar-preview-grid calendar-hour-toggle" data-hour-target="${hourId}">
+                        <div class="calendar-preview-hour" style="flex-direction:column;align-items:center;gap:2px;">
+                            <span>${formatTime(slot.hour, 0)}</span>
+                        </div>
+                        ${renderSlotCells(slot, weekDates, todayIndex, false)}
                     </div>
+                    <div class="calendar-subslots ${allExpanded ? 'expanded' : ''}" id="${hourId}">${subRows}</div>
                 `;
             }).join('');
 
             preview.innerHTML = header + body;
+            updateToggleAllButton();
+        }
+
+        function setAllHours(expand) {
+            allExpanded = expand;
+            document.querySelectorAll('.calendar-subslots').forEach(el => {
+                el.classList.toggle('expanded', expand);
+            });
+            document.querySelectorAll('.js-event-card').forEach(card => {
+                card.style.height = (expand ? card.dataset.expandedH : card.dataset.collapsedH) + 'px';
+            });
+            updateToggleAllButton();
         }
 
         function changeWeek(direction) {
@@ -517,6 +590,7 @@
             const closeModalBtn = document.getElementById('closeEventEditModal');
             const cancelModalBtn = document.getElementById('cancelEventEditModal');
             const createEventColorInput = document.getElementById('createEventColor');
+            const toggleAllBtn = document.getElementById('toggleAllHoursBtn');
 
             document.querySelectorAll('.create-color-swatch').forEach((button) => {
                 button.addEventListener('click', () => {
@@ -555,6 +629,10 @@
                     button.classList.add('ring-2', 'ring-offset-2', 'ring-offset-white');
                 });
             });
+
+            if (toggleAllBtn) {
+                toggleAllBtn.addEventListener('click', () => setAllHours(!allExpanded));
+            }
 
             if (prevWeekBtn) {
                 prevWeekBtn.addEventListener('click', () => changeWeek(-1));
@@ -602,6 +680,7 @@
             }
 
             goToToday();
+            setAllHours(false);
         });
     </script>
 @endpush
