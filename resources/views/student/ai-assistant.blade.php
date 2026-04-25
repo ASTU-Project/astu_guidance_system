@@ -9,7 +9,7 @@
             <div>
                 <section class="flex h-[calc(100vh-5rem)] sm:h-[calc(100vh-6rem)] flex-col">
                     <div class="mx-auto flex w-full max-w-4xl justify-center px-2 pb-2 sm:px-0">
-                        <div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm" role="tablist" aria-label="Assistant mode selector">
+                        <div class="inline-flex rounded-md border border-slate-200 bg-white p-1 shadow-sm" role="tablist" aria-label="Assistant mode selector">
                             <button
                                 id="mode-assistant-button"
                                 type="button"
@@ -34,12 +34,7 @@
                     </div>
 
                     <div class="flex-1 overflow-y-auto pb-2">
-                        <div id="chat-thread" class="mx-auto flex max-w-4xl flex-col gap-4" data-chat-url="{{ route('student.ai-assistant.chat') }}">
-                            <div class="flex items-end gap-3">
-                                            <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
-                                    Hello, I’m your student assistant. Ask me about academic status, campus help, or student guidance.
-                                </div>
-                            </div>
+                        <div id="chat-thread" class="mx-auto flex max-w-4xl flex-col gap-4 px-2 py-4" data-chat-url="{{ route('student.ai-assistant.chat') }}">
                         </div>
                     </div>
 
@@ -52,7 +47,7 @@
                                 <textarea
                                     id="chat-message-input"
                                     rows="1"
-                                    placeholder="Ask the assistant..."  
+                                    placeholder="Ask the assistant..."
                                     class="min-h-[44px] max-h-40 flex-1 resize-none overflow-y-auto rounded-md bg-transparent px-3 py-2.5 text-slate-700 outline-none placeholder:text-slate-400"
                                 ></textarea>
                                 <button id="chat-send-button" type="button" class="hidden inline-flex h-10 w-10 items-center justify-center rounded-md bg-slate-900 text-white hover:bg-slate-800" title="Send">
@@ -356,7 +351,7 @@
                 const contentParts = splitAssistantContent(formatted);
                 const sourcesPanel = contentParts.sourcesHtml
                     ? `
-                        <div class="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div class="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
                             <div class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Sources</div>
                             <div class="prose prose-sm max-w-none prose-slate source-panel">${contentParts.sourcesHtml}</div>
                         </div>

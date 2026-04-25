@@ -43,8 +43,8 @@
     <div id="tools-modal" class="hidden fixed inset-0 z-50 items-center justify-center px-4" data-settings-url="{{ route('admin.automation-settings.show') }}" data-settings-save-url="{{ route('admin.automation-settings.update') }}">
         <div class="absolute inset-0 bg-slate-950/60" onclick="closeToolsModal()"></div>
 
-        <div class="relative w-full max-w-4xl rounded-md bg-white shadow-2xl overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-4">
+        <div class="relative w-full max-w-4xl rounded-md bg-white shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-950">Tools Settings</h3>
                 </div>
@@ -53,6 +53,7 @@
                 </button>
             </div>
 
+            <div class="overflow-y-auto flex-1">
             <div class="grid grid-cols-1 gap-6 p-6 lg:grid-cols-2">
                 <div class="space-y-4">
                     <div class="rounded-xl p-4">
@@ -105,8 +106,9 @@
                     </div>
                 </div>
             </div>
+            </div>
 
-            <div class="flex items-center justify-end gap-2 px-6 py-4">
+            <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 flex-shrink-0">
                 <button type="button" onclick="closeToolsModal()" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
                     Cancel
                 </button>
@@ -241,7 +243,6 @@
                         ${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
                         <div class="mt-2 text-[11px] text-slate-300">${timestamp()}</div>
                     </div>
-                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-white">Me</div>
                 `;
 
                 chatThread.appendChild(wrapper);
@@ -261,7 +262,6 @@
                 const formattedContent = (typeof html === 'string' && html.trim() !== '') ? html : safeText;
 
                 wrapper.innerHTML = `
-                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
                     <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-700">
                         <div class="prose prose-sm max-w-none prose-slate">${formattedContent}</div>
                         <div class="mt-2 text-[11px] text-slate-400">${timestamp()}</div>
@@ -278,7 +278,6 @@
                 wrapper.className = 'flex items-end gap-3';
 
                 wrapper.innerHTML = `
-                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">AI</div>
                     <div class="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-4 py-3 text-sm text-slate-600">
                         <span class="inline-flex items-center gap-1">
                             <span>Thinking</span>

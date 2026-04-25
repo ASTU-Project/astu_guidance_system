@@ -87,7 +87,7 @@
                             @endif
                         </td>
                         <td class="px-4 sm:px-5 py-3 text-sm text-slate-600">
-                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold
+                            <span class="inline-flex rounded-md px-2.5 py-1 text-xs font-semibold
                                 {{ $link->type === 'telegram' ? 'bg-sky-50 text-sky-700' : 'bg-violet-50 text-violet-700' }}">
                                 {{ ucfirst($link->type) }}
                             </span>
@@ -96,13 +96,26 @@
                         <td class="px-4 sm:px-5 py-3 text-sm text-slate-600">{{ $link->category ? ucfirst($link->category) : '—' }}</td>
                         <td class="px-4 sm:px-5 py-3">
                             @if($link->is_active)
-                                <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Active</span>
+                                <span class="inline-flex rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Active</span>
                             @else
-                                <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">Inactive</span>
+                                <span class="inline-flex rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">Inactive</span>
                             @endif
                         </td>
                         <td class="px-4 sm:px-5 py-3 flex items-center gap-3">
-                            <button type="button" class="text-slate-500 hover:text-slateald-800"
+                            <button type="button" class="text-slate-400 hover:text-slate-700"
+                                onclick="openViewModal({{ json_encode([
+                                    'name'        => $link->name,
+                                    'type'        => $link->type,
+                                    'url'         => $link->url,
+                                    'leader'      => $link->leader,
+                                    'description' => $link->description,
+                                    'category'    => $link->category,
+                                    'is_active'   => $link->is_active,
+                                    'image_url'   => $link->image_src,
+                                ]) }})">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                            <button type="button" class="text-slate-500 hover:text-slate-800"
                                 onclick="openEditModal({{ json_encode([
                                     'id'          => $link->id,
                                     'name'        => $link->name,
@@ -175,6 +188,59 @@
         </form>
     </div>
 </div>
+{{-- View Modal --}}
+<div id="view-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div class="absolute inset-0 bg-slate-950/60" onclick="closeViewModal()"></div>
+    <div class="relative w-full max-w-sm rounded-md bg-white shadow-2xl overflow-hidden">
+
+        {{-- Image header with bottom gradient + name --}}
+        <div class="relative h-48 bg-slate-200">
+            <img id="view-image" src="" alt="" class="absolute inset-0 w-full h-full object-cover">
+            {{-- fallback icon when no image --}}
+            <div id="view-image-fallback" class="absolute inset-0 flex items-center justify-center">
+                <i id="view-fallback-icon" class="fa fa-users text-4xl text-slate-400"></i>
+            </div>
+            {{-- gradient overlay --}}
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
+            {{-- name on gradient --}}
+            <div class="absolute bottom-0 left-0 right-0 px-4 pb-3">
+                <p id="view-name" class="text-white font-bold text-lg leading-tight"></p>
+                <span id="view-type-badge" class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold mt-1"></span>
+            </div>
+            <button type="button" onclick="closeViewModal()" class="absolute top-3 right-3 h-7 w-7 rounded-md bg-black/40 flex items-center justify-center text-white hover:bg-black/60">
+                <i class="fa fa-times text-xs"></i>
+            </button>
+        </div>
+
+        {{-- Details --}}
+        <div class="p-4 space-y-3">
+            <div class="divide-y divide-slate-100">
+                <div id="view-description-row" class="py-2">
+                    <span class="text-xs font-medium text-slate-400">Description</span>
+                    <p id="view-description-wrap" class="text-sm text-slate-600 leading-relaxed mt-1"></p>
+                </div>
+                <div id="view-leader-row" class="flex items-center justify-between py-2">
+                    <span id="view-leader-label" class="text-xs font-medium text-slate-400">President</span>
+                    <span id="view-leader" class="text-sm text-slate-700 font-medium"></span>
+                </div>
+                <div id="view-category-row" class="flex items-center justify-between py-2">
+                    <span class="text-xs font-medium text-slate-400">Category</span>
+                    <span id="view-category" class="text-sm text-slate-700"></span>
+                </div>
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-xs font-medium text-slate-400">Status</span>
+                    <span id="view-status"></span>
+                </div>
+            </div>
+
+            <a id="view-link" href="#" target="_blank"
+                class="flex items-center justify-center gap-2 w-full rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800">
+                <i class="fa fa-arrow-up-right-from-square text-xs"></i>
+                <span id="view-link-label">Open Link</span>
+            </a>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('styles')
@@ -226,8 +292,70 @@
     }
 
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') { closeCreateModal(); closeEditModal(); }
+        if (e.key === 'Escape') { closeCreateModal(); closeEditModal(); closeViewModal(); }
     });
+
+    function openViewModal(data) {
+        const modal = document.getElementById('view-modal');
+        const img   = document.getElementById('view-image');
+        const fallback = document.getElementById('view-image-fallback');
+        const fallbackIcon = document.getElementById('view-fallback-icon');
+
+        document.getElementById('view-name').textContent = data.name ?? '';
+
+        // image
+        if (data.image_url) {
+            img.src = data.image_url;
+            img.classList.remove('hidden');
+            fallback.classList.add('hidden');
+        } else {
+            img.src = '';
+            img.classList.add('hidden');
+            fallback.classList.remove('hidden');
+            fallbackIcon.className = data.type === 'telegram'
+                ? 'fa fa-paper-plane text-4xl text-slate-400'
+                : 'fa fa-users text-4xl text-slate-400';
+        }
+
+        // type badge
+        const badge = document.getElementById('view-type-badge');
+        badge.textContent = data.type === 'telegram' ? 'Telegram' : 'Club';
+        badge.className = data.type === 'telegram'
+            ? 'inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold bg-sky-500/80 text-white mt-1'
+            : 'inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold bg-violet-500/80 text-white mt-1';
+
+        // description
+        const descWrap = document.getElementById('view-description-wrap');
+        const descRow  = document.getElementById('view-description-row');
+        descWrap.textContent = data.description ?? '';
+        descRow.classList.toggle('hidden', !data.description);
+
+        // leader
+        const leaderRow = document.getElementById('view-leader-row');
+        document.getElementById('view-leader-label').textContent = data.type === 'telegram' ? 'Admin' : 'President';
+        document.getElementById('view-leader').textContent = data.leader ?? '—';
+        leaderRow.classList.toggle('hidden', !data.leader);
+
+        // category
+        const catRow = document.getElementById('view-category-row');
+        document.getElementById('view-category').textContent = data.category ? data.category.charAt(0).toUpperCase() + data.category.slice(1) : '—';
+        catRow.classList.toggle('hidden', !data.category);
+
+        // status
+        const statusEl = document.getElementById('view-status');
+        statusEl.innerHTML = data.is_active
+            ? '<span class="inline-flex rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Active</span>'
+            : '<span class="inline-flex rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">Inactive</span>';
+
+        // link
+        document.getElementById('view-link').href = data.url ?? '#';
+        document.getElementById('view-link-label').textContent = data.type === 'telegram' ? 'Open Telegram' : 'Visit Link';
+
+        modal.classList.remove('hidden');
+    }
+    function closeViewModal() {
+        document.getElementById('view-modal').classList.add('hidden');
+    }
 
     // image preview for both modals
     ['create-image', 'edit-image'].forEach(id => {
