@@ -52,7 +52,7 @@
     </label>
     <input id="{{ $p }}-image" type="file" name="image" accept="image/png,image/jpeg,image/webp"
         class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-200 focus:border-slate-400 focus:outline-none">
-    <p class="mt-1 text-[11px] text-slate-400">JPG, PNG, WEBP — max 4 MB</p>
+    <p class="mt-1 text-[11px] text-slate-400">JPG, PNG, WEBP — max 4 MB - Logo For Channel And Header for Club</p>
     <img id="{{ $p }}-image-preview" src="" alt="Preview" class="hidden mt-2 h-24 w-full rounded-md object-cover border border-slate-200">
 </div>
 
