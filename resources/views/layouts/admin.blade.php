@@ -97,6 +97,14 @@
                     <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
                     <span>Departments</span>
                 </a>
+                <a href="{{ route('admin.subjects.index') }}" class="nav-item {{ request()->routeIs('admin.subjects.index') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-book w-4 text-center text-xs"></i>
+                    <span>Subjects</span>
+                </a>
+                <a href="{{ route('admin.community.index') }}" class="nav-item {{ request()->routeIs('admin.community.index') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
+                    <i class="fa-solid fa-users w-4 text-center text-xs"></i>
+                    <span>Community</span>
+                </a>
                 <a href="{{ route('admin.policy') }}" class="nav-item {{ request()->routeIs('admin.policy') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
                     <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
                     <span>Policy</span>

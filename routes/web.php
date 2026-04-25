@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\MapLocationController;
 use App\Http\Controllers\Admin\PolicyRuleController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\CommunityController;
+use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\StudentLoginController;
 use App\Http\Controllers\Student\CalendarController as StudentCalendarController;
@@ -64,6 +66,8 @@ Route::middleware(['auth:web'])->group(function () {
     Route::delete('/admin/policy/{policy}', [PolicyRuleController::class, 'destroy'])->name('admin.policy.destroy');
 
     Route::get('/admin/departments', [DepartmentController::class, 'index'])->name('admin.departments');
+    Route::get('/admin/subjects', [SubjectController::class, 'index'])->name('admin.subjects.index');
+    Route::get('/admin/community', [CommunityController::class, 'index'])->name('admin.community.index');
     // Route::post('/admin/departments', [DepartmentController::class, 'store'])->name('admin.departments.store');
 
     Route::get('/admin/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');

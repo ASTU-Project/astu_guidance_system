@@ -32,7 +32,7 @@
             </div>
 
             <div class="grid gap-0 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,0.85fr)]">
-                <div class="border-b border-slate-100 p-4 xl:border-b-0 xl:border-r">
+                <div class="relative z-0 border-b border-slate-100 p-4 xl:border-b-0 xl:border-r">
                     <div class="mb-3 flex items-center justify-between">
                         <div class="text-sm font-medium text-slate-700">Map view</div>
                         <div class="flex items-center gap-2">
@@ -52,10 +52,10 @@
                             </button>
                         </div>
                     </div>
-                    <div id="student-campus-map" class="h-[65vh] w-full rounded-md border border-slate-200 z-0"></div>
+                    <div id="student-campus-map" class="relative z-0 h-[65vh] w-full overflow-hidden rounded-md border border-slate-200"></div>
                 </div>
 
-                <div class="min-w-0 bg-slate-50/60">
+                <div class="relative z-10 min-w-0 bg-slate-50/60">
                     <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                         <h4 class="text-sm font-semibold text-slate-900">Listed Locations</h4>
                         <span id="location-count" class="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600">0</span>

@@ -174,7 +174,7 @@
 
     <div
         id="calendar-form-modal"
-        class="fixed inset-0 z-0 hidden items-center justify-center bg-slate-950/60 p-4"
+        class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 p-4"
         role="dialog"
         aria-modal="true"
         aria-labelledby="calendar-form-title"
