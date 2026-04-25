@@ -4,10 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class CommunityLink extends Model
 {
-    /** @use HasFactory<\Database\Factories\CommunityLinkFactory> */
     use HasFactory;
 
     protected $table = 'community_link';
@@ -16,6 +16,8 @@ class CommunityLink extends Model
         'name',
         'type',
         'url',
+        'image_url',
+        'leader',
         'description',
         'category',
         'is_active',
@@ -24,4 +26,9 @@ class CommunityLink extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function getImageSrcAttribute(): ?string
+    {
+        return $this->image_url ? Storage::disk('public')->url($this->image_url) : null;
+    }
 }

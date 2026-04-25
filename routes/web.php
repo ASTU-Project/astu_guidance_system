@@ -68,6 +68,9 @@ Route::middleware(['auth:web'])->group(function () {
     Route::get('/admin/departments', [DepartmentController::class, 'index'])->name('admin.departments');
     Route::get('/admin/subjects', [SubjectController::class, 'index'])->name('admin.subjects.index');
     Route::get('/admin/community', [CommunityController::class, 'index'])->name('admin.community.index');
+    Route::post('/admin/community', [CommunityController::class, 'store'])->name('admin.community.store');
+    Route::put('/admin/community/{community}', [CommunityController::class, 'update'])->name('admin.community.update');
+    Route::delete('/admin/community/{community}', [CommunityController::class, 'destroy'])->name('admin.community.destroy');
     // Route::post('/admin/departments', [DepartmentController::class, 'store'])->name('admin.departments.store');
 
     Route::get('/admin/profile', [ProfileController::class, 'edit'])->name('admin.profile.edit');
