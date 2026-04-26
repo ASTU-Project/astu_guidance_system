@@ -17,9 +17,9 @@
                 <p class="mt-1 text-sm text-slate-500">Academic units available</p>
             </div>
             <div class="rounded-md bg-white border border-slate-200 p-6 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Events</p>
-                <p class="mt-1 text-2xl font-bold text-slate-950">{{ number_format($number_of_events) }}</p>
-                <p class="mt-1 text-sm text-slate-500">Calendar events recorded</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Subject</p>
+                <p class="mt-1 text-2xl font-bold text-slate-950">{{ number_format($number_of_subject) }}</p>
+                <p class="mt-1 text-sm text-slate-500">Total Subjects</p>
             </div>
             <div class="rounded-md bg-white border border-slate-200 p-6 shadow-sm">
                 <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Year</p>

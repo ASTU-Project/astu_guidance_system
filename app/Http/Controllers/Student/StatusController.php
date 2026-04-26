@@ -292,15 +292,12 @@ class StatusController extends Controller
         $termYear = (int) ($selectedSemesterPanel['year'] ?? $selectedYear);
 
         $insights = [
+            '<b>Strongest subject</b>: '.((string) ($strongest['subject'] ?? 'N/A')),
+            '<b>Weakest subject</b>: '.((string) ($weakest['subject'] ?? 'N/A')),
             $hasPreviousSemesterData
-                ? $termLabel.' '.$termYear.' GPA '.($gpaChange >= 0 ? 'increased' : 'decreased').' by '.($gpaChange >= 0 ? '+' : '').number_format($gpaChange, 2).' versus previous available term'
-                : 'No previous academic term with grades found for comparison',
-            'Strongest subject: '.((string) ($strongest['subject'] ?? 'N/A')),
-            'Weakest subject: '.((string) ($weakest['subject'] ?? 'N/A')),
-            $hasPreviousSemesterData
-                ? 'Overall performance: '.($gpaChange > 0 ? 'Improving' : ($gpaChange < 0 ? 'Declining' : 'Stable')).' this term'
-                : 'Overall performance: Baseline',
-            'Year comparison: '.($yearlyChange >= 0 ? '+' : '').number_format($yearlyChange, 2).' GPA versus previous year',
+                ? '<b>Overall performance</b>: '.($gpaChange > 0 ? 'Improving' : ($gpaChange < 0 ? 'Declining' : 'Stable')).' this term'
+                : '<b>Overall performance</b>: Baseline',
+            '<b>Year comparison</b>: '.($yearlyChange >= 0 ? '+' : '').number_format($yearlyChange, 2).' GPA versus previous year',
         ];
 
         $trendLabels = $yearlyOverview->map(fn ($row): string => (string) ($row['year'] ?? ''))->values();

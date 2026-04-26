@@ -58,11 +58,51 @@
                 <p class="mt-1 text-2xl font-bold text-slate-950">Top {{ number_format((float) ($percentile ?? 100), 0) }}%</p>
                 <p class="mt-1 text-sm text-slate-500">Class percentile</p>
             </div>
-            <div class="rounded-md bg-white border border-slate-200 p-6 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Status</p>
-                <p class="mt-1 text-2xl font-bold text-slate-950">{{ $statusLabel ?? 'No Standing Data' }}</p>
-                <p class="mt-1 text-sm text-slate-500">Academic standing</p>
-            </div>
+            <div class="rounded-md border border-slate-200 p-6 shadow-sm
+            @if(($statusLabel ?? '') === 'Excellent Standing')
+                bg-emerald-50 border-emerald-200
+            @elseif(($statusLabel ?? '') === 'Good Standing')
+                bg-amber-50 border-amber-200
+            @elseif(($statusLabel ?? '') === 'At Risk')
+                bg-rose-50 border-rose-200
+            @else
+                bg-white
+            @endif
+        ">
+            <p class="text-xs font-semibold uppercase tracking-[0.3em]
+                @if(($statusLabel ?? '') === 'Excellent Standing')
+                    text-emerald-600
+                @elseif(($statusLabel ?? '') === 'Good Standing')
+                    text-amber-600
+                @elseif(($statusLabel ?? '') === 'At Risk')
+                    text-rose-600
+                @else
+                    text-slate-500
+                @endif
+            ">Academic standing</p>
+            <p class="mt-1 text-2xl font-bold
+                @if(($statusLabel ?? '') === 'Excellent Standing')
+                    text-emerald-700
+                @elseif(($statusLabel ?? '') === 'Good Standing')
+                    text-amber-700
+                @elseif(($statusLabel ?? '') === 'At Risk')
+                    text-rose-700
+                @else
+                    text-slate-950
+                @endif
+            ">{{ $statusLabel ?? 'No Standing Data' }}</p>
+            <p class="mt-1 text-sm
+                @if(($statusLabel ?? '') === 'Excellent Standing')
+                    text-emerald-600
+                @elseif(($statusLabel ?? '') === 'Good Standing')
+                    text-amber-600
+                @elseif(($statusLabel ?? '') === 'At Risk')
+                    text-rose-600
+                @else
+                    text-slate-500
+                @endif
+            ">Current status</p>
+        </div>
         </section>
 
         <div class="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_0.6fr]" id="status-trend">
@@ -90,7 +130,7 @@
                     <h3 class="text-lg font-semibold text-cyan-700">Insights</h3>
                     <ul class="mt-4 space-y-3 text-sm text-slate-600">
                         @foreach(($insights ?? []) as $insight)
-                            <li class="rounded-md bg-cyan-50 p-3 border border-cyan-200">{{ $insight }}</li>
+                            <li class="rounded-md bg-cyan-50 p-3 border border-cyan-200">{!! $insight !!}</li>
                         @endforeach
                     </ul>
                 </section>

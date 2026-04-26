@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
-@section('title', 'Map Managment')
-@section('page-title', 'Map Managment')
+@section('title', 'Map Guidance')
+@section('page-title', 'Map Guidance')
 
 @section('content')
     <div class="space-y-5">

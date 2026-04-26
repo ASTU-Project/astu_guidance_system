@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\StudentLoginController;
 use App\Http\Controllers\Student\CalendarController as StudentCalendarController;
+use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\NavigateController as StudentNavigateController;
 use App\Http\Controllers\Student\ProfileController as StudentProfileController;
 use App\Http\Controllers\Student\StudentChatController;
@@ -89,9 +90,7 @@ Route::middleware(['auth:web'])->group(function () {
 });
 
 Route::middleware(['auth:student'])->group(function () {
-    Route::get('/student/dashboard', function () {
-        return view('student.dashboard');
-    })->name('student.dashboard');
+    Route::get('/student/dashboard', [StudentDashboardController::class, 'index'])->name('student.dashboard');
 
     Route::get('/student/status', [StudentStatusController::class, 'index'])->name('student.status');
 

@@ -7,13 +7,14 @@ use App\Models\Department;
 use App\Models\Event;
 use App\Models\EventBase;
 use App\Models\Student;
+use App\Models\Subject;
 
 class DashboardController extends Controller
 {
     public function index(){
         $number_of_students = Student::count();
         $number_of_departments = Department::count();
-        $number_of_events = EventBase::count();
+        $number_of_subject = Subject::count();
 
         $top_departments = Student::query()
             ->selectRaw('department, COUNT(*) as total_students')
@@ -51,7 +52,7 @@ class DashboardController extends Controller
         return view('admin.dashboard', [
             'number_of_students' => $number_of_students,
             'number_of_departments' => $number_of_departments,
-            'number_of_events' => $number_of_events,
+            'number_of_subject' => $number_of_subject,
             'top_departments' => $top_departments,
             'performance_chart' => $performance_chart,
         ]);

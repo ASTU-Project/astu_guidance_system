@@ -6,9 +6,7 @@
     <title>ASTU Management System</title>
     @vite(['resources/css/app.css'])
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -224,7 +222,7 @@
                     <article class="float-card delay-2 absolute right-[2%] top-16 w-64 rotate-[7deg] rounded-xl border border-slate-200 bg-white/90 p-4 shadow-xl shadow-slate-900/10 backdrop-blur">
                         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Campus Map</p>
                         <h3 class="mt-3 text-lg font-bold text-slate-900">Navigation Card</h3>
-                        <div class="mt-3 h-24 rounded-lg bg-gray-900via-cyan-100 to-sky-200"></div>
+                        <div class="mt-3 h-24 rounded-lg bg-gradient-to-br from-slate-100 via-cyan-100 to-sky-200"></div>
                         <p class="mt-3 text-xs text-slate-500">Library to Main Hall - 7 min walk</p>
                     </article>
                 </div>
@@ -232,182 +230,93 @@
         </section>
 
         <section id="features" class="mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-10">
-            <div class="mb-16 text-center">
-                <span class="inline-flex rounded-full border border-slate-300 bg-slate-100 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-700">Features</span>
-                <h2 class="mt-5 text-3xl font-semibold text-slate-950 sm:text-4xl">Everything you need to guide campus life</h2>
-                <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600">Powerful tools designed for students, staff, and administrators.</p>
+            <div class="mb-10 max-w-2xl">
+                <span class="inline-flex rounded-full border border-slate-300 bg-slate-100 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-700">Platform Features</span>
+                <h2 class="mt-5 text-3xl font-semibold text-slate-950 sm:text-4xl">Asymmetric bento layout for the tools students use daily.</h2>
             </div>
-            
-            <div class="relative">
-                <div class="absolute inset-0 bg-gradient-to-r from-cyan-100/50 to-blue-100/50 -skew-y-3 transform rounded-3xl"></div>
-                
-                <div class="relative grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    <article class="group relative rounded-2xl bg-white p-8 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
-                        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-900 to-coral-500 text-white shadow-md">
-                            <i class="fa-solid fa-graduation-cap text-2xl"></i>
-                        </div>
-                        <h3 class="mt-6 text-center text-lg font-bold text-slate-950">Academic Programs</h3>
-                        <p class="mt-4 text-center text-sm leading-6 text-slate-600">
-                            Access your courses, view curriculum, track requirements, and guide your academic pathway all in one place.
-                        </p>
-                    </article>
-
-                    <article class="group relative rounded-2xl bg-white p-8 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-xl lg:-mt-8">
-                        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-900 to-coral-500 text-white shadow-md">
-                            <i class="fa-solid fa-chart-line text-2xl"></i>
-                        </div>
-                        <h3 class="mt-6 text-center text-lg font-bold text-slate-950">Results & GPA</h3>
-                        <p class="mt-4 text-center text-sm leading-6 text-slate-600">
-                            Track your grades, monitor GPA trends, view semester performance, and get insights into your academic progress.
-                        </p>
-                    </article>
-
-                    <article class="group relative rounded-2xl bg-white p-8 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-xl lg:mt-4">
-                        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-900 to-coral-500 text-white shadow-md">
-                            <i class="fa-solid fa-chalkboard-user text-2xl"></i>
-                        </div>
-                        <h3 class="mt-6 text-center text-lg font-bold text-slate-950">Advising & Support</h3>
-                        <p class="mt-4 text-center text-sm leading-6 text-slate-600">
-                            Connect with academic AI, get course guidance, schedule appointments, and receive personalized support.
-                        </p>
-                    </article>
-
-                    <article class="group relative rounded-2xl bg-white p-8 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
-                        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-900 to-coral-500 text-white shadow-md">
-                            <i class="fa-solid fa-calendar-days text-2xl"></i>
-                        </div>
-                        <h3 class="mt-6 text-center text-lg font-bold text-slate-950">Events & Activities</h3>
-                        <p class="mt-4 text-center text-sm leading-6 text-slate-600">
-                            Discover campus events, join clubs, manage your schedule, and never miss important deadlines or activities.
-                        </p>
-                    </article>
-                </div>
+            <div class="grid auto-rows-[160px] gap-4 md:grid-cols-6">
+                <article class="relative col-span-6 row-span-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:col-span-4">
+                    <div class="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-cyan-100"></div>
+                    <p class="relative text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">AI Assistant</p>
+                    <h3 class="relative mt-3 text-2xl font-bold text-slate-950">Ask anything about campus, courses, and deadlines.</h3>
+                    <p class="relative mt-3 max-w-xl text-sm leading-7 text-slate-600">Context-aware support helps new and returning students make decisions faster with less stress.</p>
+                </article>
+                <article class="col-span-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:col-span-2">
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Navigation</p>
+                    <h3 class="mt-3 text-lg font-bold text-slate-950">Campus map with location search</h3>
+                    <p class="mt-2 text-sm text-slate-600">Find buildings, departments, and services quickly.</p>
+                </article>
+                <article class="col-span-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:col-span-2">
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Academic Status</p>
+                    <h3 class="mt-3 text-lg font-bold text-slate-950">Track grade and GPA trajectory</h3>
+                    <p class="mt-2 text-sm text-slate-600">View performance insights in a clear interface.</p>
+                </article>
+                <article class="col-span-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:col-span-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Calendar + Events</p>
+                    <h3 class="mt-3 text-xl font-bold text-slate-950">Recurring classes and one-time events in one timeline.</h3>
+                    <p class="mt-2 text-sm text-slate-600">Never miss schedules, clubs, announcements, or policy reminders.</p>
+                </article>
             </div>
         </section>
 
-        <section class="mx-auto max-w-7xl px-6 py-20 sm:px-8 lg:px-10">
-            <div class="mb-8 max-w-2xl">
-                <span class="inline-flex rounded-full border border-slate-300 bg-slate-100 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-700">Testimonials</span>
-                <h2 class="mt-5 text-3xl font-semibold text-slate-950">Students and staff feedback, continuously moving.</h2>
-            </div>
-
-            <div class="testimonial-marquee overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div class="testimonial-track gap-4">
-                    @php
-                        $testimonials = [
-                            ['name' => 'Meron G.', 'role' => '3rd Year Student', 'quote' => 'The timetable and map together made my week less chaotic from day one.'],
-                            ['name' => 'Abel D.', 'role' => 'Department Staff', 'quote' => 'Announcements now reach students clearly, and event tracking is simpler.'],
-                            ['name' => 'Rahel T.', 'role' => 'Club Leader', 'quote' => 'Club discoverability improved a lot. New members join faster every semester.'],
-                            ['name' => 'Yohannes K.', 'role' => '2nd Year Student', 'quote' => 'The interface is clean and easy to use even on my phone between classes.'],
-                            ['name' => 'Hana B.', 'role' => 'Faculty Assistant', 'quote' => 'Everything feels organized: policies, schedules, and student communication.'],
-                        ];
-                        $marqueeTestimonials = array_merge($testimonials, $testimonials);
-                    @endphp
-
-                    @foreach($marqueeTestimonials as $entry)
-                        <article class="w-[300px] shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-5">
-                            <p class="text-sm leading-7 text-slate-700">"{{ $entry['quote'] }}"</p>
-                            <div class="mt-4 border-t border-slate-200 pt-3">
-                                <p class="text-sm font-semibold text-slate-900">{{ $entry['name'] }}</p>
-                                <p class="text-xs uppercase tracking-[0.14em] text-slate-500">{{ $entry['role'] }}</p>
-                            </div>
-                        </article>
-                    @endforeach
+        <section id="community" class="bg-white py-16">
+            <div class="mx-auto max-w-7xl px-6 sm:px-8 lg:px-10">
+                <div class="mb-8 max-w-2xl">
+                    <span class="inline-flex rounded-full border border-slate-300 bg-slate-100 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-700">Community and Clubs</span>
+                    <h2 class="mt-5 text-3xl font-semibold text-slate-950">One stat per card, built for quick scanning.</h2>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <article class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                        <p class="text-3xl font-extrabold tracking-tight text-slate-950">42</p>
+                        <p class="mt-2 text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Active Clubs</p>
+                    </article>
+                    <article class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                        <p class="text-3xl font-extrabold tracking-tight text-slate-950">8.4K</p>
+                        <p class="mt-2 text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Members Joined</p>
+                    </article>
+                    <article class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                        <p class="text-3xl font-extrabold tracking-tight text-slate-950">126</p>
+                        <p class="mt-2 text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Events This Term</p>
+                    </article>
+                    <article class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                        <p class="text-3xl font-extrabold tracking-tight text-slate-950">91%</p>
+                        <p class="mt-2 text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Student Engagement</p>
+                    </article>
                 </div>
             </div>
         </section>
 
         <section id="map" class="bg-white py-20">
             <div class="mx-auto max-w-7xl px-6 sm:px-8 lg:px-10">
-                <!-- Header Section -->
-                <div class="mb-10 text-center">
-                    <span class="inline-flex rounded-full border border-slate-300 bg-slate-100 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-700">
-                        Navigate ASTU
-                    </span>
-                    <h2 class="mt-5 text-3xl font-semibold text-slate-950 sm:text-4xl">
-                        Everything you need to guide campus life
-                    </h2>
-                    <p class="mx-auto mt-3 max-w-2xl text-base leading-7 text-slate-600">
-                        Powerful tools designed for students, staff, and administrators.
-                    </p>
+                <div class="mb-6">
+                    <h2 class="text-3xl font-semibold text-slate-900">Campus Map</h2>
+                    <p class="mt-2 text-slate-600">Explore campus locations and navigate with interactive map controls.</p>
                 </div>
-
-                <!-- Map and Locations Container -->
-                <div class="grid gap-8 lg:grid-cols-5">
-                    <!-- Map Section -->
-                    <div class="lg:col-span-3">
-                        <div class="relative">
-                            <div id="welcome-campus-map" class="relative z-0 h-80 w-full overflow-hidden rounded-xl border border-slate-200 shadow-sm sm:h-96 lg:h-[28rem]"></div>
-                            <div class="absolute bottom-3 right-3 z-[999] flex flex-col gap-2">
-                                <button id="welcome-layer-toggle" title="Toggle satellite" class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 bg-white/95 text-slate-600 shadow-md hover:bg-slate-50">
-                                    <i class="fa fa-layer-group text-sm"></i>
-                                </button>
-                                <button id="welcome-fullscreen-btn" title="Fullscreen" class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 bg-white/95 text-slate-600 shadow-md hover:bg-slate-50">
-                                    <i class="fa fa-expand text-sm"></i>
-                                </button>
-                            </div>
+                <div class="relative">
+                    <div id="welcome-campus-map" class="h-[500px] w-full overflow-hidden rounded-xl border border-slate-200 shadow-lg"></div>
+                    
+                    <!-- Map Controls -->
+                    <div class="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+                        <!-- Layer Control -->
+                        <div class="rounded-lg bg-white shadow-lg border border-slate-200">
+                            <button onclick="toggleMapLayer()" id="layer-toggle-btn" class="flex items-center justify-center rounded-lg p-2 text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900" title="Change Map Type">
+                                <i class="fa-solid fa-layer-group text-lg"></i>
+                            </button>
                         </div>
-                    </div>
-
-                    <!-- Locations List Section -->
-                    <div class="lg:col-span-2">
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-6">
-                            <h3 class="text-sm font-semibold uppercase tracking-[0.15em] text-slate-700">Campus Locations</h3>
-                            
-                            <!-- Library Category -->
-                            <div class="mt-6">
-                                <h4 class="text-sm font-semibold text-slate-900">Library</h4>
-                                <div class="mt-3 flex flex-wrap gap-2">
-                                    <button onclick="filterLocations('library', 'central', event)" class="location-btn rounded-lg bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-200 hover:text-slate-900 hover:shadow-md border border-slate-200">
-                                        Central Library
-                                    </button>
-                                    <button onclick="filterLocations('library', 'female', event)" class="location-btn rounded-lg bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-200 hover:text-slate-900 hover:shadow-md border border-slate-200">
-                                        Female Library
-                                    </button>
-                                    <button onclick="filterLocations('library', 'applied', event)" class="location-btn rounded-lg bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-200 hover:text-slate-900 hover:shadow-md border border-slate-200">
-                                        Applied Library
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Office Category -->
-                            <div class="mt-5">
-                                <h4 class="text-sm font-semibold text-slate-900">Office</h4>
-                                <div class="mt-3 flex flex-wrap gap-2">
-                                    <button onclick="filterLocations('office', 'bookstore', event)" class="location-btn rounded-lg bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-200 hover:text-slate-900 hover:shadow-md border border-slate-200">
-                                        Book Store
-                                    </button>
-                                    <button onclick="filterLocations('office', 'registration', event)" class="location-btn rounded-lg bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-200 hover:text-slate-900 hover:shadow-md border border-slate-200">
-                                        Registration Office
-                                    </button>
-                                    <button onclick="filterLocations('office', 'advise', event)" class="location-btn rounded-lg bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-200 hover:text-slate-900 hover:shadow-md border border-slate-200">
-                                        Advise Office
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Dormitory Category -->
-                            <div class="mt-5">
-                                <h4 class="text-sm font-semibold text-slate-900">Dormitory</h4>
-                                <div class="mt-3 flex flex-wrap gap-2">
-                                    <button onclick="filterLocations('dormitory', 'freshman', event)" class="location-btn rounded-lg bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-200 hover:text-slate-900 hover:shadow-md border border-slate-200">
-                                        Freshman Dorm
-                                    </button>
-                                    <button onclick="filterLocations('dormitory', 'seneier', event)" class="location-btn rounded-lg bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-200 hover:text-slate-900 hover:shadow-md border border-slate-200">
-                                        Seneier Dorm
-                                    </button>
-                                    <button onclick="filterLocations('dormitory', 'female', event)" class="location-btn rounded-lg bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-200 hover:text-slate-900 hover:shadow-md border border-slate-200">
-                                        Female Dorm
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- All Locations Button -->
-                            <div class="mt-6 pt-5 border-t border-slate-200">
-                                <button onclick="showAllLocations()" class="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-slate-800 hover:shadow-lg">
-                                    <i class="fa-solid fa-location-crosshairs mr-2"></i>Show All Locations
-                                </button>
-                            </div>
+                        
+                        <!-- Full Screen Control -->
+                        <div class="rounded-lg bg-white shadow-lg border border-slate-200">
+                            <button onclick="toggleFullScreen()" id="fullscreen-btn" class="flex items-center justify-center rounded-lg p-2 text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900" title="Toggle Full Screen">
+                                <i class="fa-solid fa-expand text-lg" id="expand-icon"></i>
+                                <i class="fa-solid fa-compress text-lg hidden" id="compress-icon"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Close Full Screen (hidden by default) -->
+                        <div class="rounded-lg bg-white shadow-lg border border-slate-200 hidden" id="close-fullscreen-container">
+                            <button onclick="exitFullScreen()" class="flex items-center justify-center rounded-lg p-2 text-red-600 transition-all hover:bg-red-50 hover:text-red-700" title="Close Full Screen">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -418,6 +327,9 @@
             <div class="mb-8 max-w-3xl">
                 <span class="inline-flex rounded-full border border-slate-300 bg-slate-100 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-700">FAQ</span>
                 <h2 class="mt-5 text-3xl font-semibold text-slate-950">Search and filter common questions instantly.</h2>
+            </div>
+
+            <div class="mb-8 max-w-3xl">
                 <div class="relative mt-6">
                     <input id="faq-search" type="text" placeholder="Search question or keyword" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-slate-400" />
                 </div>
@@ -486,60 +398,200 @@
         </div>
     </footer>
 
-
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // Map logic
         const welcomeLocations = @json($locations);
         let welcomeMap = null;
         let welcomeMarkerLayer = null;
-        let welcomeDefaultTiles = null;
-        let welcomeSatelliteTiles = null;
-        let welcomeSatelliteLabelTiles = null;
-        let welcomeSatelliteEnabled = false;
+        let currentLayerIndex = 0;
+        let isFullscreen = false;
+
+        // Available map tile layers
+        const mapLayers = [
+            {
+                name: 'Street Map',
+                url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+                icon: 'fa-road'
+            },
+            {
+                name: 'Satellite',
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                attribution: '&copy; Esri',
+                icon: 'fa-satellite'
+            },
+            {
+                name: 'Terrain',
+                url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+                attribution: '&copy; OpenTopoMap',
+                icon: 'fa-mountain'
+            },
+            {
+                name: 'Dark Mode',
+                url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+                icon: 'fa-moon'
+            }
+        ];
 
         function buildWelcomeMap() {
             if (welcomeMap) return;
             welcomeMap = L.map('welcome-campus-map', { zoomControl: true });
-            welcomeDefaultTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-            });
-            welcomeSatelliteTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                maxZoom: 19, attribution: 'Tiles &copy; Esri'
-            });
-            welcomeSatelliteLabelTiles = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-                maxZoom: 19, attribution: 'Labels &copy; Esri', pane: 'overlayPane'
-            });
-            welcomeDefaultTiles.addTo(welcomeMap);
+            updateMapLayer();
             welcomeMarkerLayer = L.layerGroup().addTo(welcomeMap);
         }
 
-        function toggleWelcomeSatellite() {
+        function updateMapLayer() {
             if (!welcomeMap) return;
-            welcomeSatelliteEnabled = !welcomeSatelliteEnabled;
-            const icon = document.querySelector('#welcome-layer-toggle i');
-            if (welcomeSatelliteEnabled) {
-                welcomeMap.removeLayer(welcomeDefaultTiles);
-                welcomeSatelliteTiles.addTo(welcomeMap);
-                welcomeSatelliteLabelTiles.addTo(welcomeMap);
-                if (icon) { icon.classList.remove('fa-layer-group'); icon.classList.add('fa-map'); }
-            } else {
-                welcomeMap.removeLayer(welcomeSatelliteTiles);
-                welcomeMap.removeLayer(welcomeSatelliteLabelTiles);
-                welcomeDefaultTiles.addTo(welcomeMap);
-                if (icon) { icon.classList.remove('fa-map'); icon.classList.add('fa-layer-group'); }
+            
+            // Clear existing tile layers
+            welcomeMap.eachLayer((layer) => {
+                if (layer instanceof L.TileLayer) {
+                    welcomeMap.removeLayer(layer);
+                }
+            });
+            
+            // Add new tile layer
+            const layer = mapLayers[currentLayerIndex];
+            L.tileLayer(layer.url, {
+                maxZoom: 20,
+                subdomains: 'abcd',
+                attribution: layer.attribution
+            }).addTo(welcomeMap);
+            
+            // Update button icon
+            const btn = document.getElementById('layer-toggle-btn');
+            if (btn) {
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fa-solid ' + layer.icon;
+                }
             }
         }
 
-        function toggleWelcomeFullscreen() {
+        function toggleMapLayer() {
+            currentLayerIndex = (currentLayerIndex + 1) % mapLayers.length;
+            updateMapLayer();
+            
+            // Visual feedback
+            const btn = document.getElementById('layer-toggle-btn');
+            btn.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                btn.style.transform = 'scale(1)';
+            }, 150);
+        }
+
+        function toggleFullScreen() {
             const mapContainer = document.getElementById('welcome-campus-map');
-            if (!mapContainer) return;
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
-            } else if (mapContainer.requestFullscreen) {
-                mapContainer.requestFullscreen();
+            const expandIcon = document.getElementById('expand-icon');
+            const compressIcon = document.getElementById('compress-icon');
+            const closeContainer = document.getElementById('close-fullscreen-container');
+            const controls = document.querySelector('.absolute.top-4.right-4');
+            
+            if (!isFullscreen) {
+                // Enter fullscreen
+                if (mapContainer.requestFullscreen) {
+                    mapContainer.requestFullscreen();
+                } else if (mapContainer.webkitRequestFullscreen) {
+                    mapContainer.webkitRequestFullscreen();
+                } else if (mapContainer.msRequestFullscreen) {
+                    mapContainer.msRequestFullscreen();
+                }
+                
+                // Expand map to full viewport
+                mapContainer.style.height = '100vh';
+                mapContainer.style.width = '100vw';
+                mapContainer.style.position = 'fixed';
+                mapContainer.style.top = '0';
+                mapContainer.style.left = '0';
+                mapContainer.style.zIndex = '9999';
+                mapContainer.style.borderRadius = '0';
+                mapContainer.style.border = 'none';
+                
+                // Update icons
+                expandIcon.classList.add('hidden');
+                compressIcon.classList.remove('hidden');
+                
+                // Show close button
+                closeContainer.classList.remove('hidden');
+                
+                // Reposition controls
+                controls.style.top = '20px';
+                controls.style.right = '20px';
+                
+                isFullscreen = true;
+                
+                // Invalidate map size
+                if (welcomeMap) {
+                    setTimeout(() => welcomeMap.invalidateSize(), 100);
+                }
+            } else {
+                exitFullScreen();
             }
         }
+
+        function exitFullScreen() {
+            const mapContainer = document.getElementById('welcome-campus-map');
+            const expandIcon = document.getElementById('expand-icon');
+            const compressIcon = document.getElementById('compress-icon');
+            const closeContainer = document.getElementById('close-fullscreen-container');
+            const controls = document.querySelector('.absolute.top-4.right-4');
+            
+            // Exit fullscreen API
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+            
+            // Reset map styles
+            mapContainer.style.height = '500px';
+            mapContainer.style.width = '100%';
+            mapContainer.style.position = 'relative';
+            mapContainer.style.top = 'auto';
+            mapContainer.style.left = 'auto';
+            mapContainer.style.zIndex = '';
+            mapContainer.style.borderRadius = '0.5rem';
+            mapContainer.style.border = '1px solid #e2e8f0';
+            
+            // Reset icons
+            expandIcon.classList.remove('hidden');
+            compressIcon.classList.add('hidden');
+            
+            // Hide close button
+            closeContainer.classList.add('hidden');
+            
+            // Reset controls
+            controls.style.top = '16px';
+            controls.style.right = '16px';
+            
+            isFullscreen = false;
+            
+            // Invalidate map size
+            if (welcomeMap) {
+                setTimeout(() => welcomeMap.invalidateSize(), 100);
+            }
+        }
+
+        // Listen for fullscreen change events
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                exitFullScreen();
+            }
+        });
+        document.addEventListener('webkitfullscreenchange', () => {
+            if (!document.webkitFullscreenElement) {
+                exitFullScreen();
+            }
+        });
+        document.addEventListener('MSFullscreenChange', () => {
+            if (!document.msFullscreenElement) {
+                exitFullScreen();
+            }
+        });
 
         function welcomeMarkerPopupHtml(location) {
             const category = location.category || 'Campus Place';
@@ -656,22 +708,6 @@
             buildWelcomeMap();
             welcomeRenderMarkers(welcomeLocations);
             setupFaqSearch();
-
-            const layerBtn = document.getElementById('welcome-layer-toggle');
-            if (layerBtn) layerBtn.addEventListener('click', toggleWelcomeSatellite);
-
-            const fsBtn = document.getElementById('welcome-fullscreen-btn');
-            if (fsBtn) fsBtn.addEventListener('click', toggleWelcomeFullscreen);
-
-            document.addEventListener('fullscreenchange', () => {
-                const icon = document.querySelector('#welcome-fullscreen-btn i');
-                if (document.fullscreenElement) {
-                    if (icon) { icon.classList.remove('fa-expand'); icon.classList.add('fa-compress'); }
-                } else {
-                    if (icon) { icon.classList.remove('fa-compress'); icon.classList.add('fa-expand'); }
-                    setTimeout(() => { if (welcomeMap) welcomeMap.invalidateSize(); }, 80);
-                }
-            });
         });
     </script>
 </body>
