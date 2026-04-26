@@ -42,17 +42,25 @@ class CommunityController extends Controller
             'type'        => ['required', 'in:club,telegram'],
             'url'         => ['required', 'url', 'max:500'],
             'leader'      => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'category'    => ['nullable', 'string', 'max:100'],
+            'description' => ['required', 'string'],
+            'category'    => ['required', 'string', 'max:100'],
             'is_active'   => ['boolean'],
+            'logo'        => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'image'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
+        // Handle logo upload
+        if ($request->hasFile('logo')) {
+            $validated['logo_url'] = $request->file('logo')->store('community_logos', 'public');
+        }
+        unset($validated['logo']);
+
+        // Handle cover image upload (optional, legacy)
         if ($request->hasFile('image')) {
             $validated['image_url'] = $request->file('image')->store('community', 'public');
         }
-
         unset($validated['image']);
+
         $validated['is_active'] = $request->boolean('is_active', true);
 
         CommunityLink::create($validated);
@@ -70,9 +78,19 @@ class CommunityController extends Controller
             'description' => ['nullable', 'string'],
             'category'    => ['nullable', 'string', 'max:100'],
             'is_active'   => ['boolean'],
+            'logo'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'image'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
+        // Handle logo upload (update)
+        if ($request->hasFile('logo')) {
+            if ($community->logo_url) {
+                Storage::disk('public')->delete($community->logo_url);
+            }
+            $validated['logo_url'] = $request->file('logo')->store('community_logos', 'public');
+        }
+
+        // Handle cover image upload (update)
         if ($request->hasFile('image')) {
             if ($community->image_url) {
                 Storage::disk('public')->delete($community->image_url);
@@ -80,6 +98,7 @@ class CommunityController extends Controller
             $validated['image_url'] = $request->file('image')->store('community', 'public');
         }
 
+        unset($validated['logo']);
         unset($validated['image']);
         $validated['is_active'] = $request->boolean('is_active', true);
 

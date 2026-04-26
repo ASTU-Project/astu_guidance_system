@@ -112,6 +112,7 @@
                                     'category'    => $link->category,
                                     'is_active'   => $link->is_active,
                                     'image_url'   => $link->image_src,
+                                    'logo_url'    => $link->logo_src,
                                 ]) }})">
                                 <i class="fa fa-eye"></i>
                             </button>
@@ -160,7 +161,7 @@
         </div>
         <form action="{{ route('admin.community.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
             @csrf
-            @include('admin.community-form', ['data' => null])
+            @include('admin.community-form', ['data' => null, 'p' => 'create', 'isEdit' => false])
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" onclick="closeCreateModal()" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
                 <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save</button>
@@ -180,7 +181,7 @@
         <form id="edit-form" action="" method="POST" enctype="multipart/form-data" class="space-y-4">
             @csrf @method('PUT')
             <input type="hidden" name="_edit_id" value="1">
-            @include('admin.community-form', ['data' => 'edit'])
+            @include('admin.community-form', ['data' => 'edit', 'p' => 'edit', 'isEdit' => true])
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" onclick="closeEditModal()" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
                 <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Update</button>
@@ -189,52 +190,45 @@
     </div>
 </div>
 {{-- View Modal --}}
-<div id="view-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4">
-    <div class="absolute inset-0 bg-slate-950/60" onclick="closeViewModal()"></div>
-    <div class="relative w-full max-w-sm rounded-md bg-white shadow-2xl overflow-hidden">
-
-        {{-- Image header with bottom gradient + name --}}
-        <div class="relative h-48 bg-slate-200">
-            <img id="view-image" src="" alt="" class="absolute inset-0 w-full h-full object-cover">
-            {{-- fallback icon when no image --}}
-            <div id="view-image-fallback" class="absolute inset-0 flex items-center justify-center">
-                <i id="view-fallback-icon" class="fa fa-users text-4xl text-slate-400"></i>
-            </div>
-            {{-- gradient overlay --}}
-            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
-            {{-- name on gradient --}}
-            <div class="absolute bottom-0 left-0 right-0 px-4 pb-3">
-                <p id="view-name" class="text-white font-bold text-lg leading-tight"></p>
-                <span id="view-type-badge" class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold mt-1"></span>
-            </div>
-            <button type="button" onclick="closeViewModal()" class="absolute top-3 right-3 h-7 w-7 rounded-md bg-black/40 flex items-center justify-center text-white hover:bg-black/60">
-                <i class="fa fa-times text-xs"></i>
+<div id="view-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/50 backdrop-blur-sm">
+    <div class="absolute inset-0" onclick="closeViewModal()"></div>
+    <div class="relative w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col rounded-md bg-white shadow-2xl modal-animate">
+        <!-- Modal Header -->
+        <div class="relative h-44 flex-shrink-0 bg-cover bg-center" style="background: #f1f5f9;">
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/80"></div>
+            <button type="button" onclick="closeViewModal()" class="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center text-white text-xl transition z-10">
+                &times;
             </button>
-        </div>
-
-        {{-- Details --}}
-        <div class="p-4 space-y-3">
-            <div class="divide-y divide-slate-100">
-                <div id="view-description-row" class="py-2">
-                    <span class="text-xs font-medium text-slate-400">Description</span>
-                    <p id="view-description-wrap" class="text-sm text-slate-600 leading-relaxed mt-1"></p>
+            <div class="absolute left-6 bottom-6 flex flex-col items-start">
+                <img id="view-image" src="" alt="Channel Logo" class="w-16 h-16 rounded-full border-2 border-white shadow-lg mb-2 object-cover bg-white" style="display:none;">
+                <div id="view-image-fallback" class="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center mb-2">
+                    <i id="view-fallback-icon" class="fa fa-users text-4xl text-slate-400"></i>
                 </div>
-                <div id="view-leader-row" class="flex items-center justify-between py-2">
-                    <span id="view-leader-label" class="text-xs font-medium text-slate-400">President</span>
-                    <span id="view-leader" class="text-sm text-slate-700 font-medium"></span>
-                </div>
-                <div id="view-category-row" class="flex items-center justify-between py-2">
-                    <span class="text-xs font-medium text-slate-400">Category</span>
-                    <span id="view-category" class="text-sm text-slate-700"></span>
-                </div>
-                <div class="flex items-center justify-between py-2">
-                    <span class="text-xs font-medium text-slate-400">Status</span>
-                    <span id="view-status"></span>
-                </div>
+                <h2 id="view-name" class="text-2xl font-bold text-white [text-shadow:0_2px_4px_rgba(0,0,0,0.2)] mb-1"></h2>
+                <span id="view-type-badge" class="inline-block bg-violet-600 text-white text-xs font-semibold px-3 py-1 rounded-full mt-1"></span>
             </div>
-
+        </div>
+        <!-- Modal Body -->
+        <div class="modal-content p-6 overflow-y-auto flex-1">
+            <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Description</p>
+            <p id="view-description-wrap" class="text-sm text-gray-700 leading-relaxed mb-6"></p>
+            <div class="info-row flex justify-between items-center py-3 border-b border-slate-200">
+                <span class="info-label text-sm text-gray-500" id="view-leader-label">Admin</span>
+                <span class="info-value text-sm font-semibold text-gray-900" id="view-leader">—</span>
+            </div>
+            <div class="info-row flex justify-between items-center py-3 border-b border-slate-200">
+                <span class="info-label text-sm text-gray-500">Category</span>
+                <span id="view-category" class="info-value text-sm font-semibold text-gray-900">General</span>
+            </div>
+            <div class="info-row flex justify-between items-center py-3 border-b border-slate-200">
+                <span class="info-label text-sm text-gray-500">Status</span>
+                <span id="view-status" class="info-value text-sm font-semibold text-emerald-600">Active</span>
+            </div>
+        </div>
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex-shrink-0">
             <a id="view-link" href="#" target="_blank"
-                class="flex items-center justify-center gap-2 w-full rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800">
+                class="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold py-3 rounded-lg transition">
                 <i class="fa fa-arrow-up-right-from-square text-xs"></i>
                 <span id="view-link-label">Open Link</span>
             </a>
@@ -251,6 +245,11 @@
     .pagination a:hover { background:#f8fafc; border-color:#cbd5e1; color:#0f172a; }
     .pagination .active span { background:#0f172a; border-color:#0f172a; color:#fff; }
     .pagination .disabled span { background:#f8fafc; color:#94a3b8; border-color:#e2e8f0; }
+    .modal-animate { animation: modalIn 0.25s ease-out; }
+    @keyframes modalIn {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
 </style>
 @endpush
 
@@ -300,18 +299,29 @@
         const img   = document.getElementById('view-image');
         const fallback = document.getElementById('view-image-fallback');
         const fallbackIcon = document.getElementById('view-fallback-icon');
+        const header = modal.querySelector('.relative.h-44');
 
         document.getElementById('view-name').textContent = data.name ?? '';
 
-        // image
+
+        // Cover image as header background
         if (data.image_url) {
-            img.src = data.image_url;
-            img.classList.remove('hidden');
-            fallback.classList.add('hidden');
+            header.style.backgroundImage = `url('${data.image_url}')`;
+            header.style.backgroundSize = 'cover';
+            header.style.backgroundPosition = 'center';
+        } else {
+            header.style.backgroundImage = '';
+        }
+
+        // Show real logo if available, otherwise fallback to icon
+        if (data.logo_url) {
+            img.src = data.logo_url;
+            img.style.display = '';
+            fallback.style.display = 'none';
         } else {
             img.src = '';
-            img.classList.add('hidden');
-            fallback.classList.remove('hidden');
+            img.style.display = 'none';
+            fallback.style.display = '';
             fallbackIcon.className = data.type === 'telegram'
                 ? 'fa fa-paper-plane text-4xl text-slate-400'
                 : 'fa fa-users text-4xl text-slate-400';
@@ -321,37 +331,31 @@
         const badge = document.getElementById('view-type-badge');
         badge.textContent = data.type === 'telegram' ? 'Telegram' : 'Club';
         badge.className = data.type === 'telegram'
-            ? 'inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold bg-sky-500/80 text-white mt-1'
-            : 'inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold bg-violet-500/80 text-white mt-1';
+            ? 'inline-block bg-sky-500/80 text-white text-xs font-semibold px-3 py-1 rounded-full mt-1'
+            : 'inline-block bg-violet-600 text-white text-xs font-semibold px-3 py-1 rounded-full mt-1';
 
         // description
-        const descWrap = document.getElementById('view-description-wrap');
-        const descRow  = document.getElementById('view-description-row');
-        descWrap.textContent = data.description ?? '';
-        descRow.classList.toggle('hidden', !data.description);
+        document.getElementById('view-description-wrap').textContent = data.description ?? '';
 
-        // leader
-        const leaderRow = document.getElementById('view-leader-row');
+        // leader/admin
         document.getElementById('view-leader-label').textContent = data.type === 'telegram' ? 'Admin' : 'President';
         document.getElementById('view-leader').textContent = data.leader ?? '—';
-        leaderRow.classList.toggle('hidden', !data.leader);
 
         // category
-        const catRow = document.getElementById('view-category-row');
         document.getElementById('view-category').textContent = data.category ? data.category.charAt(0).toUpperCase() + data.category.slice(1) : '—';
-        catRow.classList.toggle('hidden', !data.category);
 
         // status
         const statusEl = document.getElementById('view-status');
-        statusEl.innerHTML = data.is_active
-            ? '<span class="inline-flex rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Active</span>'
-            : '<span class="inline-flex rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">Inactive</span>';
+        statusEl.textContent = data.is_active ? 'Active' : 'Inactive';
+        statusEl.className = 'info-value text-sm font-semibold ' + (data.is_active ? 'text-emerald-600' : 'text-gray-500');
 
         // link
         document.getElementById('view-link').href = data.url ?? '#';
         document.getElementById('view-link-label').textContent = data.type === 'telegram' ? 'Open Telegram' : 'Visit Link';
 
         modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
     }
     function closeViewModal() {
         document.getElementById('view-modal').classList.add('hidden');

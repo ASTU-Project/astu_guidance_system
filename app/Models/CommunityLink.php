@@ -17,6 +17,7 @@ class CommunityLink extends Model
         'type',
         'url',
         'image_url',
+        'logo_url',
         'leader',
         'description',
         'category',
@@ -27,8 +28,26 @@ class CommunityLink extends Model
         'is_active' => 'boolean',
     ];
 
+            protected $appends = ['logo_src', 'image_src'];
     public function getImageSrcAttribute(): ?string
     {
-        return $this->image_url ? Storage::disk('public')->url($this->image_url) : null;
+        if (!$this->image_url) {
+            return null;
+        }
+
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $storage */
+        $storage = Storage::disk('public');
+        return $storage->url($this->image_url);
+    }
+
+    public function getLogoSrcAttribute(): ?string
+    {
+        if (!$this->logo_url) {
+            return null;
+        }
+
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $storage */
+        $storage = Storage::disk('public');
+        return $storage->url($this->logo_url);
     }
 }
