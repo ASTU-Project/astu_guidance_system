@@ -6,11 +6,17 @@
 </div>
 
 <div>
-    <label class="mb-1 block text-sm font-medium text-slate-700">Logo Image <span class="text-red-500">*</span></label>
+    <label class="mb-1 block text-sm font-medium text-slate-700">Logo Image
+        @if(!$isEdit)
+            <span class="text-red-500">*</span>
+        @else
+            <span class="text-slate-400 font-normal">(leave empty to keep current)</span>
+        @endif
+    </label>
     <input id="{{ $p }}-logo" type="file" name="logo" accept="image/png,image/jpeg,image/webp"
         onchange="previewLogo(event, '{{ $p }}-logo-preview')"
         class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-200 focus:border-slate-400 focus:outline-none"
-        required>
+        @if(!$isEdit) required @endif>
     <p class="mt-1 text-[11px] text-slate-400">JPG, PNG, WEBP — max 4 MB. This is the logo for the channel.</p>
 </div>
 <img id="{{ $p }}-logo-preview" src="" alt="Logo Preview" class="hidden mt-2 h-16 w-16 rounded-full object-cover border border-slate-200">

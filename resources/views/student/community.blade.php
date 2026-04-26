@@ -5,24 +5,44 @@
 
 @section('content')
 <div class="space-y-5">
-    <!-- Header -->
+    <!-- Channels Section (Telegram) -->
     <div class="mb-1 text-left">
         <h1 class="text-xl font-semibold text-slate-800">Channels</h1>
         <p class="text-sm text-slate-500 mt-1">Connect with your peers through our community channels</p>
     </div>
 
-    <!-- Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-        @foreach(App\Models\CommunityLink::where('is_active', true)->orderBy('name')->get() as $community)
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
+        @foreach(App\Models\CommunityLink::where('is_active', true)->where('type', 'telegram')->orderBy('name')->get() as $community)
         <div onclick="openCommunityModal({{ $community->toJson() }})"
-            class="bg-white border border-slate-200 rounded-md p-6 flex flex-col gap-4 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300 shadow-sm">
-            <div class="flex flex-col items-start gap-2">
+            class="bg-white border border-slate-200 rounded-md p-6 flex flex-col gap-1 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300 shadow-sm">
+            <div class="flex flex-col items-start">
+                <img src="{{ $community->logo_src ?? 'https://ui-avatars.com/api/?name=' . urlencode($community->name) . '&background=f1f5f9&color=1f2937&bold=true&size=56' }}"
+                     alt="{{ $community->name }}"
+                     class="w-14 h-14 rounded-full border-2 border-gray-800 object-cover flex-shrink-0 shadow-sm">
+                <h2 class="text-lg font-bold text-gray-900">{{ $community->name }}</h2>
+            </div>
+            <p class="text-sm text-gray-600 leading-relaxed">{{ \Illuminate\Support\Str::limit($community->description, 120) }}</p>
+        </div>
+        @endforeach
+    </div>
+
+    <!-- Clubs Section (Club) -->
+    <div class="mb-1 text-left mt-8">
+        <h1 class="text-xl font-semibold text-slate-800">Clubs</h1>
+        <p class="text-sm text-slate-500 mt-1">Join student clubs and engage in activities</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
+        @foreach(App\Models\CommunityLink::where('is_active', true)->where('type', 'club')->orderBy('name')->get() as $community)
+        <div onclick="openCommunityModal({{ $community->toJson() }})"
+            class="bg-white border border-slate-200 rounded-md p-6 flex flex-col gap-1 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300 shadow-sm">
+            <div class="flex flex-col items-start">
                 <img src="{{ $community->logo_src ?? 'https://ui-avatars.com/api/?name=' . urlencode($community->name) . '&background=f1f5f9&color=1f2937&bold=true&size=56' }}"
                      alt="{{ $community->name }}"
                      class="w-14 h-14 rounded-full border-2 border-gray-800 object-cover flex-shrink-0 shadow-sm mb-1">
                 <h2 class="text-lg font-bold text-gray-900">{{ $community->name }}</h2>
             </div>
-            <p class="text-sm text-gray-600 leading-relaxed">{{ \Illuminate\Support\Str::limit($community->description, 120) }}</p>
+            <p class="text-sm text-gray-600 leading-relaxed">{{ $community->description }}</p>
         </div>
         @endforeach
     </div>
@@ -54,7 +74,7 @@
             <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Description</p>
             <p id="modalDescription" class="text-sm text-gray-700 leading-relaxed mb-6"></p>
             <div class="info-row flex justify-between items-center py-3 border-b border-slate-200">
-                <span class="info-label text-sm text-gray-500">Admin</span>
+                <span id="modalAdminLabel" class="info-label text-sm text-gray-500">Admin</span>
                 <span class="info-value text-sm font-semibold text-gray-900">—</span>
             </div>
             <div class="info-row flex justify-between items-center py-3 border-b border-slate-200">
@@ -72,7 +92,7 @@
             <button onclick="visitLink()"
                     class="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold py-3 rounded-lg transition">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                Visit Channel
+                <span id="modalLinkLabel">Visit Channel</span>
             </button>
         </div>
     </div>
@@ -100,6 +120,12 @@
         document.getElementById('modalBadge').textContent = data.type ? data.type.charAt(0).toUpperCase() + data.type.slice(1) : '';
         document.getElementById('modalCategory').textContent = data.category || '';
         document.getElementById('modalDescription').textContent = data.description || '';
+        
+        // Set dynamic labels based on community type
+        const isClub = data.type === 'club';
+        document.getElementById('modalAdminLabel').textContent = isClub ? 'President' : 'Admin';
+        document.getElementById('modalLinkLabel').textContent = isClub ? 'Visit Club' : 'Visit Channel';
+        
         // Set header background image (use cover image if available, else fallback)
         const header = document.getElementById('modalHeader');
         if (data.image_src) {

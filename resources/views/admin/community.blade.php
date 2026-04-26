@@ -127,6 +127,7 @@
                                     'category'    => $link->category,
                                     'is_active'   => $link->is_active,
                                     'image_url'   => $link->image_src,
+                                    'logo_url'    => $link->logo_src,
                                 ]) }})">
                                 <i class="fa fa-edit"></i>
                             </button>
@@ -282,6 +283,15 @@
         } else {
             preview.src = '';
             preview.classList.add('hidden');
+        }
+
+        const logoPreview = document.getElementById('edit-logo-preview');
+        if (data.logo_url) {
+            logoPreview.src = data.logo_url;
+            logoPreview.classList.remove('hidden');
+        } else {
+            logoPreview.src = '';
+            logoPreview.classList.add('hidden');
         }
 
         document.getElementById('edit-modal').classList.remove('hidden');

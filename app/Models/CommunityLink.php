@@ -28,7 +28,7 @@ class CommunityLink extends Model
         'is_active' => 'boolean',
     ];
 
-            protected $appends = ['logo_src', 'image_src'];
+    protected $appends = ['logo_src', 'image_src'];
     public function getImageSrcAttribute(): ?string
     {
         if (!$this->image_url) {
