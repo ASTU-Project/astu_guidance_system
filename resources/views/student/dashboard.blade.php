@@ -16,7 +16,7 @@
         </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             <!-- Total Credit Hours Card -->
             <div class="rounded-md bg-white border border-slate-200 p-6 shadow-sm">
                 <div class="flex items-center justify-between">

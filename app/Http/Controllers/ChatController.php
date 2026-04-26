@@ -52,16 +52,24 @@ class ChatController extends Controller
         }
 
         $name = (string) ($student->name ?? 'Student');
+        $studentId = (string) ($student->student_id ?? 'Unknown ID');
         $department = (string) ($student->department ?? 'Unknown Department');
         $year = (string) ($student->current_year ?? 'Unknown Year');
         $semester = (string) ($student->current_semester ?? 'Unknown Semester');
+        $section = (string) ($student->current_section ?? 'Unknown Section');
+        $cgpa = $student->cgpa ? (string) $student->cgpa : 'Not Available';
+        $email = (string) ($student->email ?? 'Not Provided');
+        $phone = (string) ($student->phone ?? 'Not Provided');
 
         return implode("\n", [
             'Student profile context:',
             '- Name: '.$name,
+            '- Student ID: '.$studentId,
             '- Department: '.$department,
             '- Current Year: '.$year,
             '- Current Semester: '.$semester,
+            '- Current Section: '.$section,
+            '- Current Year GPA: '.$cgpa,
             '',
             'Student message: '.$message,
         ]);

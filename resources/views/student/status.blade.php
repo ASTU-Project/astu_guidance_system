@@ -112,7 +112,6 @@
                         <h3 class="text-lg font-semibold text-cyan-700">GPA Trend</h3>
                         <p class="text-sm text-slate-500">Year-by-year GPA performance trend</p>
                     </div>
-                    <span class="text-xs text-slate-500">Scale 0.00 - 4.00</span>
                 </div>
 
                 <div class="mt-4 rounded border border-slate-200 bg-slate-50 p-2">
@@ -155,7 +154,7 @@
                             <span class="text-xs font-semibold text-cyan-700">GPA {{ number_format((float) ($semData['gpa'] ?? 0), 2) }}</span>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="w-full min-w-[520px]">
+                            <table class="w-full min-w-[660px]">
                                 <thead class="bg-cyan-50 text-left">
                                     <tr>
                                         <th class="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Subject</th>
@@ -216,7 +215,7 @@
                 </div>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[760px]">
+                <table class="w-full min-w-[860px]">
                     <thead class="bg-cyan-50 text-left">
                         <tr>
                             <th class="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Year</th>
@@ -252,12 +251,12 @@
         <section id="status-performance" class="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <h3 class="text-lg font-semibold text-cyan-700">Subject Performance ({{ $performanceScopeLabel ?? 'Selected Semester' }})</h3>
-                <p class="text-xs text-slate-500">Score scale: 0 - 100 • {{ $selectedSemesterPanelTitle ?? 'Selected term' }}</p>
+                
             </div>
 
-            <div class="mt-4 rounded border border-slate-200 bg-slate-50 p-2">
-                <div class="relative w-full min-w-[680px] overflow-x-auto" style="min-width: 0; height: 240px; min-height: 240px; max-height: 240px;">
-                    <canvas id="subjectPerformanceChart" class="h-full w-full" aria-label="Subject performance bar chart" role="img"></canvas>
+            <div class="mt-4 rounded border border-slate-200 bg-slate-50 p-2 overflow-x-auto">
+                <div class="relative" style="height: 260px; min-width: 100%;">
+                    <canvas id="subjectPerformanceChart" style="height: 260px;" aria-label="Subject performance bar chart" role="img"></canvas>
                     <div id="subjectPerformanceChartEmpty" class="absolute inset-0 hidden items-center justify-center text-sm text-slate-500">
                         No subject performance data available yet
                     </div>
@@ -356,14 +355,23 @@
             const subjectCanvas = document.getElementById('subjectPerformanceChart');
             const subjectEmpty = document.getElementById('subjectPerformanceChartEmpty');
 
+            function scoreToColor(score) {
+                if (score >= 90) return '#10b981';
+                if (score >= 80) return '#06b6d4';
+                if (score >= 70) return '#3b82f6';
+                if (score >= 60) return '#f59e0b';
+                if (score >= 50) return '#f97316';
+                return '#f43f5e';
+            }
+
             if (subjectCanvas) {
                 if (!performanceLabels.length || !performanceValues.length) {
                     subjectCanvas.classList.add('hidden');
                     subjectEmpty?.classList.remove('hidden');
                     subjectEmpty?.classList.add('flex');
                 } else {
-                    const minChartWidth = Math.max(680, performanceLabels.length * 60);
-                    subjectCanvas.style.minWidth = `${minChartWidth}px`;
+                    const minChartWidth = Math.max(performanceLabels.length * 55, subjectCanvas.parentElement?.clientWidth || 0);
+                    subjectCanvas.style.width = minChartWidth + 'px';
 
                     new Chart(subjectCanvas, {
                         type: 'bar',
@@ -372,13 +380,13 @@
                             datasets: [{
                                 label: 'Score',
                                 data: performanceValues,
-                                backgroundColor: '#06b6d4',
+                                backgroundColor: performanceValues.map(v => scoreToColor(v)),
                                 borderRadius: 6,
-                                maxBarThickness: 46,
+                                maxBarThickness: 40,
                             }],
                         },
                         options: {
-                            responsive: true,
+                            responsive: false,
                             maintainAspectRatio: false,
                             plugins: {
                                 legend: {
@@ -402,7 +410,7 @@
                                             const detail = performanceDetails[index] ?? null;
 
                                             if (!detail) {
-                                                return `${Number(context.parsed.y)}`;
+                                                return `Score: ${Number(context.parsed.y)}`;
                                             }
 
                                             return [
@@ -426,7 +434,7 @@
                                         font: {
                                             size: 10,
                                         },
-                                        maxRotation: 0,
+                                        maxRotation: performanceLabels.length > 8 ? 45 : 0,
                                         minRotation: 0,
                                     },
                                 },

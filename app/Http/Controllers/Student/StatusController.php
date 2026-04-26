@@ -219,13 +219,15 @@ class StatusController extends Controller
 
         $currentTermSubjects = $selectedSemesterSubjects
             ->map(function (array $subject) use ($selectedYear, $selectedSemester): array {
+                $score = (int) ($subject['score'] ?? 0);
                 return [
                     'subject' => (string) ($subject['subject'] ?? 'Unknown Subject'),
                     'code' => (string) ($subject['code'] ?? 'N/A'),
-                    'score' => (int) ($subject['score'] ?? 0),
+                    'score' => $score,
                     'credit' => (int) ($subject['credit'] ?? 0),
                     'year' => $selectedYear,
                     'semester' => $selectedSemester,
+                    'grade' => $this->scoreToLetter($score),
                 ];
             })
             ->values();
@@ -233,14 +235,16 @@ class StatusController extends Controller
         $allTimeSubjects = $studentGrades
             ->map(function (Grade $grade): array {
                 $subject = $grade->subject;
+                $score = (int) $grade->score;
 
                 return [
                     'subject' => $subject?->name ?? 'Unknown Subject',
                     'code' => $subject?->code ?? 'N/A',
-                    'score' => (int) $grade->score,
+                    'score' => $score,
                     'credit' => (int) ($subject?->credit_hours ?? 0),
                     'year' => (int) $grade->year,
                     'semester' => $this->normalizeSemester((string) $grade->semester),
+                    'grade' => $this->scoreToLetter($score),
                 ];
             })
             ->sortBy(fn (array $subject): int => ($subject['year'] * 10) + ($subject['semester'] === 'Sem 1' ? 1 : 2))

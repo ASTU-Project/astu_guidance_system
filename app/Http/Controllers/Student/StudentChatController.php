@@ -60,7 +60,7 @@ class StudentChatController extends ChatController
 
         $systemInstruction = implode("\n", [
             'Role: Student assistant for ASTU Management System.',
-            'Allowed tools: department_list and policy_list only.',
+            'Allowed tools: department_list and policy_list.',
             'Never invent department or policy data; use tools when needed.',
             'Keep answers concise and clear for students.',
         ]);
