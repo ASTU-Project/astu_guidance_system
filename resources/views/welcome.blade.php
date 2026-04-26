@@ -167,7 +167,7 @@
             <a href="/" class="text-lg font-bold tracking-tight text-slate-950">ASTUMG</a>
             <nav class="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
                 <a href="#features" class="transition hover:text-slate-950">Features</a>
-                <a href="#community" class="transition hover:text-slate-950">Community</a>
+                <a href="/information" class="transition hover:text-slate-950">Community</a>
                 <a href="#map" class="transition hover:text-slate-950">Map</a>
                 <a href="#faq" class="transition hover:text-slate-950">FAQ</a>
                 <a href="/login" class="transition hover:text-slate-950">Login</a>
@@ -475,7 +475,7 @@
                     <p class="text-sm font-semibold uppercase tracking-[0.22em] text-slate-800">Explore</p>
                     <ul class="mt-4 space-y-3 text-sm text-slate-600">
                         <li><a href="#features" class="transition hover:text-slate-950">Features</a></li>
-                        <li><a href="#community" class="transition hover:text-slate-950">Community</a></li>
+                        <li><a href="/information" class="transition hover:text-slate-950">Community</a></li>
                         <li><a href="#map" class="transition hover:text-slate-950">Map</a></li>
                         <li><a href="#faq" class="transition hover:text-slate-950">FAQ</a></li>
                         <li><a href="/login" class="transition hover:text-slate-950">Login</a></li>

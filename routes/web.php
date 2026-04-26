@@ -22,9 +22,12 @@ use App\Http\Controllers\Student\StudentChatController;
 use App\Http\Controllers\Student\StatusController as StudentStatusController;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\InformationController;
 use App\Http\Controllers\WelcomeController;
 
 Route::get('/', [WelcomeController::class, 'index']);
+
+Route::get('/information', [InformationController::class, 'index'])->name('information');
 
 Route::middleware(['guest:web'])->group(function () {
     Route::get('/admin/login', [LoginController::class, 'showLoginForm'])->name('admin.login');
