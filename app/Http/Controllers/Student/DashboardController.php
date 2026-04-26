@@ -7,6 +7,7 @@ use App\Models\Grade;
 use App\Models\Subject;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -29,17 +30,13 @@ class DashboardController extends Controller
         // Calculate total unique subjects taken
         $totalSubjects = $grades->unique('subject_id')->count();
         
-        // Calculate current year GPA (average of scores for current year)
+        // Calculate current year GPA using the same logic as StatusController
         $currentYear = $student->current_year;
         $currentYearGrades = $grades->where('year', $currentYear);
         
-        $currentYearGPA = 0;
-        if ($currentYearGrades->count() > 0) {
-            $currentYearGPA = $currentYearGrades->avg('score') / 25; // Convert 0-100 scale to 0-4 GPA
-            $currentYearGPA = round($currentYearGPA, 2);
-        }
+        $currentYearGPA = $this->calculateGpa($currentYearGrades);
         
-        // Determine academic status based on GPA
+        // Determine academic status based on GPA (matching StatusController logic)
         $academicStatus = $this->determineAcademicStatus($currentYearGPA);
         
         // Get recent grades for display
@@ -74,14 +71,54 @@ class DashboardController extends Controller
         ]);
     }
     
+    private function calculateGpa(Collection $grades): float
+    {
+        $totalCredits = 0;
+        $weightedPoints = 0.0;
+
+        foreach ($grades as $grade) {
+            if (! $grade instanceof Grade) {
+                continue;
+            }
+
+            $credit = (int) ($grade->subject?->credit_hours ?? 0);
+            if ($credit <= 0) {
+                continue;
+            }
+
+            $point = $this->scoreToPoint((int) $grade->score);
+            $weightedPoints += $point * $credit;
+            $totalCredits += $credit;
+        }
+
+        if ($totalCredits === 0) {
+            return 0.0;
+        }
+
+        return round($weightedPoints / $totalCredits, 2);
+    }
+    
+    private function scoreToPoint(int $score): float
+    {
+        return match (true) {
+            $score >= 90 => 4.0,
+            $score >= 85 => 4.0,
+            $score >= 80 => 3.7,
+            $score >= 75 => 3.3,
+            $score >= 70 => 3.0,
+            $score >= 65 => 2.7,
+            $score >= 60 => 2.0,
+            $score >= 50 => 1.0,
+            default => 0.0,
+        };
+    }
+    
     private function determineAcademicStatus(float $gpa): string
     {
         if ($gpa >= 3.5) {
-            return 'Excellent';
-        } elseif ($gpa >= 2.5) {
-            return 'Good';
+            return 'Excellent Standing';
         } elseif ($gpa >= 2.0) {
-            return 'Satisfactory';
+            return 'Good Standing';
         } else {
             return 'At Risk';
         }

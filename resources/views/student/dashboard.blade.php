@@ -60,15 +60,75 @@
             </div>
 
             <!-- Academic Status Card -->
-            <div class="rounded-md bg-white border border-slate-200 p-6 shadow-sm">
+            <div class="rounded-md border border-slate-200 p-6 shadow-sm
+                @if(($academicStatus ?? 'Excellent Standing') === 'Excellent Standing')
+                    bg-emerald-50 border-emerald-200
+                @elseif(($academicStatus ?? 'Excellent Standing') === 'Good Standing')
+                    bg-amber-50 border-amber-200
+                @elseif(($academicStatus ?? 'Excellent Standing') === 'At Risk')
+                    bg-rose-50 border-rose-200
+                @else
+                    bg-white
+                @endif
+            ">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Academic Status</p>
-                        <p class="mt-1 text-2xl font-bold text-slate-950">{{ $academicStatus ?? 'Excellent' }}</p>
-                        <p class="mt-1 text-sm text-slate-500">Based on your performance</p>
+                        <p class="text-xs font-semibold uppercase tracking-[0.3em]
+                            @if(($academicStatus ?? 'Excellent Standing') === 'Excellent Standing')
+                                text-emerald-600
+                            @elseif(($academicStatus ?? 'Excellent Standing') === 'Good Standing')
+                                text-amber-600
+                            @elseif(($academicStatus ?? 'Excellent Standing') === 'At Risk')
+                                text-rose-600
+                            @else
+                                text-slate-500
+                            @endif
+                        ">Academic Status</p>
+                        <p class="mt-1 text-2xl font-bold
+                            @if(($academicStatus ?? 'Excellent Standing') === 'Excellent Standing')
+                                text-emerald-700
+                            @elseif(($academicStatus ?? 'Excellent Standing') === 'Good Standing')
+                                text-amber-700
+                            @elseif(($academicStatus ?? 'Excellent Standing') === 'At Risk')
+                                text-rose-700
+                            @else
+                                text-slate-950
+                            @endif
+                        ">{{ $academicStatus ?? 'Excellent Standing' }}</p>
+                        <p class="mt-1 text-sm
+                            @if(($academicStatus ?? 'Excellent Standing') === 'Excellent Standing')
+                                text-emerald-600
+                            @elseif(($academicStatus ?? 'Excellent Standing') === 'Good Standing')
+                                text-amber-600
+                            @elseif(($academicStatus ?? 'Excellent Standing') === 'At Risk')
+                                text-rose-600
+                            @else
+                                text-slate-500
+                            @endif
+                        ">Based on your performance</p>
                     </div>
-                    <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <i class="fa-solid fa-trophy text-emerald-600 text-xl"></i>
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center
+                        @if(($academicStatus ?? 'Excellent Standing') === 'Excellent Standing')
+                            bg-emerald-100
+                        @elseif(($academicStatus ?? 'Excellent Standing') === 'Good Standing')
+                            bg-amber-100
+                        @elseif(($academicStatus ?? 'Excellent Standing') === 'At Risk')
+                            bg-rose-100
+                        @else
+                            bg-slate-100
+                        @endif
+                    ">
+                        <i class="fa-solid
+                            @if(($academicStatus ?? 'Excellent Standing') === 'Excellent Standing')
+                                fa-trophy text-emerald-600
+                            @elseif(($academicStatus ?? 'Excellent Standing') === 'Good Standing')
+                                fa-check-circle text-amber-600
+                            @elseif(($academicStatus ?? 'Excellent Standing') === 'At Risk')
+                                fa-exclamation-triangle text-rose-600
+                            @else
+                                fa-user-graduate text-slate-600
+                            @endif
+                            text-xl"></i>
                     </div>
                 </div>
             </div>
