@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('url');
             $table->text('description')->nullable();
             $table->string('category');
+            $table->string('image_url', 2048)->nullable();
+            $table->string('logo_url')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
