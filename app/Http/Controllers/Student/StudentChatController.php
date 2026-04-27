@@ -56,7 +56,7 @@ class StudentChatController extends ChatController
         $student = $request->user('student');
         $message = trim($validated['message']);
         $sessionId = $validated['session_id'] ?? (string) Str::uuid();
-        $enabledToolGroups = ['departments', 'policies'];
+        $enabledToolGroups = ['departments', 'policies', 'map_locations'];
 
         $systemInstruction = implode("\n", [
             'Role: Student assistant for ASTU Management System.',
@@ -108,6 +108,25 @@ class StudentChatController extends ChatController
                             'question' => ['type' => 'string'],
                             'category' => ['type' => 'string'],
                             'active_only' => ['type' => 'boolean'],
+                            'sort_by' => ['type' => 'string'],
+                            'sort_order' => ['type' => 'string'],
+                            'limit' => ['type' => 'integer'],
+                            'cursor_id' => ['type' => 'integer'],
+                        ],
+                        'additionalProperties' => false,
+                    ],
+                ],
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'map_location_list',
+                    'description' => 'List and search campus map locations. For plain list-all requests, omit q and set limit directly. For category filtering, use category. Use sort_by+sort_order for deterministic ordering. cursor_id pagination is supported when sort_by=id.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'q' => ['type' => 'string'],
+                            'category' => ['type' => 'string'],
                             'sort_by' => ['type' => 'string'],
                             'sort_order' => ['type' => 'string'],
                             'limit' => ['type' => 'integer'],

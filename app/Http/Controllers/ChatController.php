@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mcp\Tools\DepartmentList;
+use App\Mcp\Tools\MapLocationList;
 use App\Mcp\Tools\PolicyList;
 use App\Mcp\Tools\StudentList;
 use App\Models\Department;
@@ -40,15 +41,15 @@ class ChatController extends Controller
 
     protected function buildInFlightLockKey(mixed $user, string $sessionId, string $ip): string
     {
-        $userPart = ($user !== null && isset($user->id)) ? ('u:'.$user->id) : ('ip:'.$ip);
+        $userPart = ($user !== null && isset($user->id)) ? ('u:' . $user->id) : ('ip:' . $ip);
 
-        return 'chat:in_flight:'.$userPart.':'.$sessionId;
+        return 'chat:in_flight:' . $userPart . ':' . $sessionId;
     }
 
     protected function buildStudentContextPrompt(mixed $student, string $message): string
     {
-        if (! is_object($student)) {
-            return 'Student profile context is unavailable. Message: '.$message;
+        if (!is_object($student)) {
+            return 'Student profile context is unavailable. Message: ' . $message;
         }
 
         $name = (string) ($student->name ?? 'Student');
@@ -63,15 +64,15 @@ class ChatController extends Controller
 
         return implode("\n", [
             'Student profile context:',
-            '- Name: '.$name,
-            '- Student ID: '.$studentId,
-            '- Department: '.$department,
-            '- Current Year: '.$year,
-            '- Current Semester: '.$semester,
-            '- Current Section: '.$section,
-            '- Current Year GPA: '.$cgpa,
+            '- Name: ' . $name,
+            '- Student ID: ' . $studentId,
+            '- Department: ' . $department,
+            '- Current Year: ' . $year,
+            '- Current Semester: ' . $semester,
+            '- Current Section: ' . $section,
+            '- Current Year GPA: ' . $cgpa,
             '',
-            'Student message: '.$message,
+            'Student message: ' . $message,
         ]);
     }
 
@@ -203,7 +204,7 @@ class ChatController extends Controller
 
         if (isset($payload['messages']) && is_array($payload['messages'])) {
             $payload['messages'] = array_map(function ($message) {
-                if (! is_array($message)) {
+                if (!is_array($message)) {
                     return $message;
                 }
 
@@ -260,7 +261,7 @@ class ChatController extends Controller
                 continue;
             }
 
-            $placeholder = 'ASTU_MATH_'.count($protectedLatexSegments).'_TOKEN';
+            $placeholder = 'ASTU_MATH_' . count($protectedLatexSegments) . '_TOKEN';
             $protectedLatexSegments[$placeholder] = e($segment['content']);
             $result .= $placeholder;
             $offset = $segment['end'];
@@ -283,7 +284,7 @@ class ChatController extends Controller
         foreach ($delimiters as $delimiter) {
             $open = $delimiter['open'];
 
-            if (! str_starts_with(substr($content, $offset), $open)) {
+            if (!str_starts_with(substr($content, $offset), $open)) {
                 continue;
             }
 
@@ -310,7 +311,7 @@ class ChatController extends Controller
         if (preg_match('/\\\\begin\{([a-z*]+)\}/A', substr($content, $offset), $matches) === 1) {
             $environment = (string) ($matches[1] ?? '');
             $opening = (string) ($matches[0] ?? '');
-            $closing = '\\end{'.$environment.'}';
+            $closing = '\\end{' . $environment . '}';
             $start = $offset + strlen($opening);
             $closingOffset = strpos($content, $closing, $start);
 
@@ -351,11 +352,11 @@ class ChatController extends Controller
         $delimiterLength = strlen($closeDelimiter);
 
         while ($offset < $length) {
-            if (! $allowMultiline && ($content[$offset] ?? '') === "\n") {
+            if (!$allowMultiline && ($content[$offset] ?? '') === "\n") {
                 return null;
             }
 
-            if (substr($content, $offset, $delimiterLength) === $closeDelimiter && ! $this->isEscapedOffset($content, $offset)) {
+            if (substr($content, $offset, $delimiterLength) === $closeDelimiter && !$this->isEscapedOffset($content, $offset)) {
                 return $offset;
             }
 
@@ -376,7 +377,7 @@ class ChatController extends Controller
                 return null;
             }
 
-            if ($character === '$' && ! $this->isEscapedOffset($content, $offset)) {
+            if ($character === '$' && !$this->isEscapedOffset($content, $offset)) {
                 $previousCharacter = $content[$offset - 1] ?? '';
 
                 if ($previousCharacter !== '' && preg_match('/\s/', $previousCharacter) !== 1) {
@@ -453,9 +454,9 @@ class ChatController extends Controller
         $context = [
             $baseInstruction,
             'User automation settings context:',
-            '- Enabled tool groups: '.$enabledGroupsText,
-            '- Enable write tools: '.($settings->enable_write_tools ? 'true' : 'false'),
-            '- Confirm destructive actions: '.($settings->confirm_destructive_actions ? 'true' : 'false'),
+            '- Enabled tool groups: ' . $enabledGroupsText,
+            '- Enable write tools: ' . ($settings->enable_write_tools ? 'true' : 'false'),
+            '- Confirm destructive actions: ' . ($settings->confirm_destructive_actions ? 'true' : 'false'),
             '- Execution behavior: use available live data paths when needed; otherwise answer directly.',
         ];
 
@@ -472,7 +473,7 @@ class ChatController extends Controller
      */
     protected function getEnabledToolGroupsFromSettings(?AutomationSetting $settings): array
     {
-        if (! $settings) {
+        if (!$settings) {
             return [];
         }
 
@@ -512,12 +513,12 @@ class ChatController extends Controller
             return $groups;
         }
 
-        return array_values(array_filter($groups, static fn (string $group): bool => $group === 'departments'));
+        return array_values(array_filter($groups, static fn(string $group): bool => $group === 'departments'));
     }
 
     protected function getAutomationSettings(mixed $user): ?AutomationSetting
     {
-        if ($user === null || ! isset($user->id) || ! Schema::hasTable('automation_settings')) {
+        if ($user === null || !isset($user->id) || !Schema::hasTable('automation_settings')) {
             return null;
         }
 
@@ -538,7 +539,7 @@ class ChatController extends Controller
         $requestedPolicyId = $this->extractRequestedPolicyId($message);
         $hasExplicitPolicyIdRequest = $requestedPolicyId !== null;
 
-        if ($looksLikeExplain && $mentionsPolicies && ! $hasExplicitPolicyIdRequest) {
+        if ($looksLikeExplain && $mentionsPolicies && !$hasExplicitPolicyIdRequest) {
             $payload = $this->runMcpTool(new PolicyList(), $enabledToolGroups, 'policies', $user, [
                 'question' => $message,
                 'active_only' => true,
@@ -547,7 +548,7 @@ class ChatController extends Controller
                 'sort_order' => 'desc',
             ]);
 
-            if (! isset($payload['error'])) {
+            if (!isset($payload['error'])) {
                 $policies = is_array($payload['policies'] ?? null) ? $payload['policies'] : [];
 
                 if ($policies !== []) {
@@ -556,14 +557,14 @@ class ChatController extends Controller
                     $lines[] = '';
 
                     foreach ($policies as $policy) {
-                        if (! is_array($policy) || ! isset($policy['title'])) {
+                        if (!is_array($policy) || !isset($policy['title'])) {
                             continue;
                         }
 
-                        $lines[] = '- **'.(string) $policy['title'].'** ('.(string) ($policy['category'] ?? 'General').')';
+                        $lines[] = '- **' . (string) $policy['title'] . '** (' . (string) ($policy['category'] ?? 'General') . ')';
 
                         if (isset($policy['content']) && is_string($policy['content'])) {
-                            $lines[] = '  - '.Str::limit($policy['content'], 220);
+                            $lines[] = '  - ' . Str::limit($policy['content'], 220);
                         }
                     }
 
@@ -576,7 +577,7 @@ class ChatController extends Controller
         }
 
         // Let the LLM compose explanatory answers from tool evidence instead of returning a direct fast-path template.
-        if ($looksLikeExplain && ! $hasExplicitPolicyIdRequest) {
+        if ($looksLikeExplain && !$hasExplicitPolicyIdRequest) {
             return null;
         }
 
@@ -617,13 +618,13 @@ class ChatController extends Controller
             if ($departments !== []) {
                 $lines[] = '## Departments';
                 foreach ($departments as $department) {
-                    if (! is_array($department) || ! isset($department['name'])) {
+                    if (!is_array($department) || !isset($department['name'])) {
                         continue;
                     }
 
-                    $line = '- '.(string) $department['name'];
+                    $line = '- ' . (string) $department['name'];
                     if (isset($department['code'])) {
-                        $line .= ' ('.(string) $department['code'].')';
+                        $line .= ' (' . (string) $department['code'] . ')';
                     }
 
                     $lines[] = $line;
@@ -634,13 +635,13 @@ class ChatController extends Controller
                 $lines[] = '';
                 $lines[] = '## Policies';
                 foreach ($policies as $policy) {
-                    if (! is_array($policy) || ! isset($policy['title'])) {
+                    if (!is_array($policy) || !isset($policy['title'])) {
                         continue;
                     }
 
-                    $line = '- **'.(string) $policy['title'].'**';
+                    $line = '- **' . (string) $policy['title'] . '**';
                     if (isset($policy['category'])) {
-                        $line .= ' ('.(string) $policy['category'].')';
+                        $line .= ' (' . (string) $policy['category'] . ')';
                     }
 
                     $lines[] = $line;
@@ -673,7 +674,7 @@ class ChatController extends Controller
             $lines = ["## Departments",];
             foreach ($departments as $dept) {
                 if (is_array($dept) && isset($dept['name'])) {
-                    $lines[] = '- '.(string) $dept['name'];
+                    $lines[] = '- ' . (string) $dept['name'];
                 }
             }
 
@@ -706,15 +707,15 @@ class ChatController extends Controller
                     'limit' => 5,
                 ]);
 
-                if (! isset($searchPayload['error'])) {
+                if (!isset($searchPayload['error'])) {
                     $matches = is_array($searchPayload['departments'] ?? null) ? $searchPayload['departments'] : [];
                     if (count($matches) === 1 && is_array($matches[0])) {
                         $dept = $matches[0];
                         $lines = ["## Department details"];
-                        $lines[] = '- **Name**: '.(string) ($dept['name'] ?? '—');
-                        $lines[] = '- **Code**: '.(string) ($dept['code'] ?? '—');
-                        $lines[] = '- **Min GPA**: '.(string) ($dept['min_gpa'] ?? '—');
-                        $lines[] = '- **Spot limit**: '.(string) ($dept['spot_limit'] ?? '—');
+                        $lines[] = '- **Name**: ' . (string) ($dept['name'] ?? '—');
+                        $lines[] = '- **Code**: ' . (string) ($dept['code'] ?? '—');
+                        $lines[] = '- **Min GPA**: ' . (string) ($dept['min_gpa'] ?? '—');
+                        $lines[] = '- **Spot limit**: ' . (string) ($dept['spot_limit'] ?? '—');
                         $lines[] = '';
                         $lines[] = 'If you meant a different department, tell me the name/code.';
 
@@ -726,9 +727,9 @@ class ChatController extends Controller
             $lines = ["Which department do you want details for? Here are the current departments:"];
             foreach ($departments as $dept) {
                 if (is_array($dept) && isset($dept['name'], $dept['code'])) {
-                    $lines[] = '- '.(string) $dept['name'].' ('.(string) $dept['code'].')';
+                    $lines[] = '- ' . (string) $dept['name'] . ' (' . (string) $dept['code'] . ')';
                 } elseif (is_array($dept) && isset($dept['name'])) {
-                    $lines[] = '- '.(string) $dept['name'];
+                    $lines[] = '- ' . (string) $dept['name'];
                 }
             }
 
@@ -751,7 +752,7 @@ class ChatController extends Controller
             $students = is_array($payload['students'] ?? null) ? $payload['students'] : [];
             if ($students === []) {
                 if ($requestedDepartment !== null) {
-                    return 'No students found for '.$requestedDepartment.' ranked by CGPA.';
+                    return 'No students found for ' . $requestedDepartment . ' ranked by CGPA.';
                 }
 
                 return 'No students found for the requested GPA ranking.';
@@ -759,26 +760,26 @@ class ChatController extends Controller
 
             $heading = '## Top students by CGPA';
             if ($requestedDepartment !== null) {
-                $heading .= ' in '.$requestedDepartment;
+                $heading .= ' in ' . $requestedDepartment;
             }
 
-            $lines = [$heading.' ('.count($students).')'];
+            $lines = [$heading . ' (' . count($students) . ')'];
             foreach ($students as $student) {
                 if (is_array($student) && isset($student['name'], $student['student_id'])) {
                     $cgpa = isset($student['cgpa']) ? (string) $student['cgpa'] : '—';
-                    $lines[] = '- '.(string) $student['name'].' ('.(string) $student['student_id'].') - CGPA: '.$cgpa;
+                    $lines[] = '- ' . (string) $student['name'] . ' (' . (string) $student['student_id'] . ') - CGPA: ' . $cgpa;
                 }
             }
 
             if ($requestedLimit >= self::STUDENT_TOOL_LIST_HARD_LIMIT) {
                 $lines[] = '';
-                $lines[] = 'Note: Student list is capped at '.self::STUDENT_TOOL_LIST_HARD_LIMIT.' records per request.';
+                $lines[] = 'Note: Student list is capped at ' . self::STUDENT_TOOL_LIST_HARD_LIMIT . ' records per request.';
             }
 
             return implode("\n", $lines);
         }
 
-        if ($looksLikeList && $mentionsStudents && ! $looksLikeStudentRanking) {
+        if ($looksLikeList && $mentionsStudents && !$looksLikeStudentRanking) {
             $requestedLimit = $this->extractRequestedStudentLimit($message);
             $payload = $this->runMcpTool(new StudentList(), $enabledToolGroups, 'students', $user, [
                 'limit' => $requestedLimit,
@@ -793,16 +794,16 @@ class ChatController extends Controller
                 return "No students found.";
             }
 
-            $lines = ['## Students ('.count($students).')'];
+            $lines = ['## Students (' . count($students) . ')'];
             foreach ($students as $student) {
                 if (is_array($student) && isset($student['name'], $student['student_id'])) {
-                    $lines[] = '- '.(string) $student['name'].' ('.(string) $student['student_id'].')';
+                    $lines[] = '- ' . (string) $student['name'] . ' (' . (string) $student['student_id'] . ')';
                 }
             }
 
             if ($requestedLimit >= self::STUDENT_TOOL_LIST_HARD_LIMIT) {
                 $lines[] = '';
-                $lines[] = 'Note: Student list is capped at '.self::STUDENT_TOOL_LIST_HARD_LIMIT.' records per request.';
+                $lines[] = 'Note: Student list is capped at ' . self::STUDENT_TOOL_LIST_HARD_LIMIT . ' records per request.';
             }
 
             return implode("\n", $lines);
@@ -827,17 +828,17 @@ class ChatController extends Controller
 
                 $students = is_array($payload['students'] ?? null) ? $payload['students'] : [];
                 if ($students === []) {
-                    return 'No students found for CGPA >= '.$minCgpa.'.';
+                    return 'No students found for CGPA >= ' . $minCgpa . '.';
                 }
 
-                $lines = ['## Students with CGPA >= '.$minCgpa.' ('.count($students).')'];
+                $lines = ['## Students with CGPA >= ' . $minCgpa . ' (' . count($students) . ')'];
                 foreach ($students as $student) {
-                    if (! is_array($student) || ! isset($student['name'], $student['student_id'])) {
+                    if (!is_array($student) || !isset($student['name'], $student['student_id'])) {
                         continue;
                     }
 
                     $cgpa = isset($student['cgpa']) ? (string) $student['cgpa'] : '—';
-                    $lines[] = '- '.(string) $student['name'].' ('.(string) $student['student_id'].') - CGPA: '.$cgpa;
+                    $lines[] = '- ' . (string) $student['name'] . ' (' . (string) $student['student_id'] . ') - CGPA: ' . $cgpa;
                 }
 
                 return implode("\n", $lines);
@@ -855,14 +856,14 @@ class ChatController extends Controller
                         'limit' => 1,
                     ]);
 
-                    if (! isset($detailPayload['error'])) {
+                    if (!isset($detailPayload['error'])) {
                         $matches = is_array($detailPayload['policies'] ?? null) ? $detailPayload['policies'] : [];
                         if (count($matches) === 1 && is_array($matches[0])) {
                             $policy = $matches[0];
-                            $lines = ['## Policy #'.$policyId];
-                            $lines[] = '- **Title**: '.(string) ($policy['title'] ?? '—');
-                            $lines[] = '- **Category**: '.(string) ($policy['category'] ?? 'General');
-                            $lines[] = '- **Status**: '.((bool) ($policy['is_active'] ?? false) ? 'Active' : 'Inactive');
+                            $lines = ['## Policy #' . $policyId];
+                            $lines[] = '- **Title**: ' . (string) ($policy['title'] ?? '—');
+                            $lines[] = '- **Category**: ' . (string) ($policy['category'] ?? 'General');
+                            $lines[] = '- **Status**: ' . ((bool) ($policy['is_active'] ?? false) ? 'Active' : 'Inactive');
                             $lines[] = '';
                             $lines[] = '### Content';
                             $lines[] = (string) ($policy['content'] ?? 'No content available.');
@@ -871,7 +872,7 @@ class ChatController extends Controller
                         }
                     }
 
-                    return 'Policy #'.$policyId.' was not found.';
+                    return 'Policy #' . $policyId . ' was not found.';
                 }
             }
 
@@ -894,17 +895,55 @@ class ChatController extends Controller
 
             $lines = ['## Relevant policies'];
             foreach ($policies as $policy) {
-                if (! is_array($policy) || ! isset($policy['title'])) {
+                if (!is_array($policy) || !isset($policy['title'])) {
                     continue;
                 }
 
-                $lines[] = '- **'.(string) $policy['title'].'** ('.(string) ($policy['category'] ?? 'General').')';
+                $lines[] = '- **' . (string) $policy['title'] . '** (' . (string) ($policy['category'] ?? 'General') . ')';
                 if (isset($policy['content']) && is_string($policy['content'])) {
-                    $lines[] = '  - '.Str::limit($policy['content'], 180);
+                    $lines[] = '  - ' . Str::limit($policy['content'], 180);
                 }
             }
 
             return implode("\n", $lines);
+        }
+
+        // Map location fast-path handling
+        if (preg_match('/\b(map|location|building|facility|office|campus|where|directions?)\b/', $text)) {
+            $looksLikeList = (bool) preg_match('/\b(list|show|display|all)\b/', $text);
+
+            if ($looksLikeList) {
+                $payload = $this->runMcpTool(new MapLocationList(), $enabledToolGroups, 'map_locations', $user, [
+                    'limit' => self::TOOL_LIST_HARD_LIMIT,
+                    'sort_by' => 'name',
+                    'sort_order' => 'asc',
+                ]);
+
+                if (isset($payload['error'])) {
+                    return null;
+                }
+
+                $locations = is_array($payload['locations'] ?? null) ? $payload['locations'] : [];
+                if ($locations === []) {
+                    return "No map locations found.";
+                }
+
+                $lines = ["## Campus Locations"];
+                foreach ($locations as $location) {
+                    if (is_array($location) && isset($location['name'])) {
+                        $line = '- ' . (string) $location['name'];
+                        if (isset($location['category'])) {
+                            $line .= ' (' . (string) $location['category'] . ')';
+                        }
+                        if (isset($location['latitude'], $location['longitude']) && $location['latitude'] !== null && $location['longitude'] !== null) {
+                            $line .= ' - [Open in Maps](https://maps.google.com/?q=' . $location['latitude'] . ',' . $location['longitude'] . ')';
+                        }
+                        $lines[] = $line;
+                    }
+                }
+
+                return implode("\n", $lines);
+            }
         }
 
         return null;
@@ -988,6 +1027,28 @@ class ChatController extends Controller
             ];
         }
 
+        if (in_array('map_locations', $enabledToolGroups, true)) {
+            $tools[] = [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'map_location_list',
+                    'description' => 'List and search campus map locations. You can use the returned latitude and longitude to build clickable map links: [Map](https://maps.google.com/?q={lat},{lon}). For plain list-all requests, omit q and set limit directly. Use cursor_id pagination when sort_by=id.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'q' => ['type' => 'string', 'description' => 'Optional search term by location name, description, or category.'],
+                            'category' => ['type' => 'string', 'description' => 'Exact category filter (e.g., "Building", "Facility", "Office").'],
+                            'sort_by' => ['type' => 'string', 'description' => 'Sort field: id, name, or category.'],
+                            'sort_order' => ['type' => 'string', 'description' => 'Sort direction: asc or desc.'],
+                            'limit' => ['type' => 'integer', 'description' => 'Rows to return (1-100). For "list all locations", set limit and omit q.'],
+                            'cursor_id' => ['type' => 'integer', 'description' => 'Pagination cursor (supported when sort_by=id). Return rows with id > cursor_id.'],
+                        ],
+                        'additionalProperties' => false,
+                    ],
+                ],
+            ];
+        }
+
         return $tools;
     }
 
@@ -1022,7 +1083,7 @@ class ChatController extends Controller
             ];
         }
 
-        if ($looksLikeList && in_array('students', $enabledToolGroups, true) && $this->isAdminUser($user) && $mentionsStudents && ! $looksLikeStudentRanking) {
+        if ($looksLikeList && in_array('students', $enabledToolGroups, true) && $this->isAdminUser($user) && $mentionsStudents && !$looksLikeStudentRanking) {
             return [
                 'type' => 'function',
                 'function' => ['name' => 'student_list'],
@@ -1036,13 +1097,20 @@ class ChatController extends Controller
             ];
         }
 
+        if (in_array('map_locations', $enabledToolGroups, true) && preg_match('/\b(map|location|building|facility|office|campus|where|directions?)\b/', $text)) {
+            return [
+                'type' => 'function',
+                'function' => ['name' => 'map_location_list'],
+            ];
+        }
+
         return 'auto';
     }
 
     /**
      * @param array<string, mixed> $call
      * @param array<int, string> $enabledToolGroups
-    * @param mixed $user
+     * @param mixed $user
      * @return array<string, string>
      */
     protected function executeToolCall(array $call, array $enabledToolGroups, mixed $user): array
@@ -1058,8 +1126,9 @@ class ChatController extends Controller
             'department_list' => $this->runMcpTool(new DepartmentList(), $enabledToolGroups, 'departments', $user, $args),
             'student_list' => $this->runMcpTool(new StudentList(), $enabledToolGroups, 'students', $user, $args),
             'policy_list' => $this->runMcpTool(new PolicyList(), $enabledToolGroups, 'policies', $user, $args),
+            'map_location_list' => $this->runMcpTool(new MapLocationList(), $enabledToolGroups, 'map_locations', $user, $args),
             default => [
-                'error' => 'Unknown tool requested: '.$functionName,
+                'error' => 'Unknown tool requested: ' . $functionName,
             ],
         };
 
@@ -1111,15 +1180,15 @@ class ChatController extends Controller
      *
      * @param object $tool
      * @param array<int, string> $enabledToolGroups
-    * @param mixed $user
+     * @param mixed $user
      * @param array<string, mixed> $args
      * @return array<string, mixed>
      */
     protected function runMcpTool(object $tool, array $enabledToolGroups, string $requiredGroup, mixed $user, array $args = []): array
     {
-        if (! in_array($requiredGroup, $enabledToolGroups, true)) {
+        if (!in_array($requiredGroup, $enabledToolGroups, true)) {
             return [
-                'error' => ucfirst($requiredGroup).' tool is disabled in settings.',
+                'error' => ucfirst($requiredGroup) . ' tool is disabled in settings.',
             ];
         }
 
@@ -1145,7 +1214,7 @@ class ChatController extends Controller
             ]);
 
             return [
-                'error' => 'Tool execution failed for '.$requiredGroup.'.',
+                'error' => 'Tool execution failed for ' . $requiredGroup . '.',
             ];
         }
 
@@ -1259,7 +1328,7 @@ class ChatController extends Controller
 
     protected function isAdminUser(mixed $user): bool
     {
-        if (! $user instanceof User) {
+        if (!$user instanceof User) {
             return false;
         }
 
@@ -1330,7 +1399,7 @@ class ChatController extends Controller
 
     protected function extractRequestedDepartmentName(string $message): ?string
     {
-        if (! Schema::hasTable('departments')) {
+        if (!Schema::hasTable('departments')) {
             return null;
         }
 
@@ -1338,7 +1407,7 @@ class ChatController extends Controller
         $departments = Department::query()
             ->select(['name', 'code'])
             ->get()
-            ->sortByDesc(fn (Department $department): int => strlen((string) $department->name));
+            ->sortByDesc(fn(Department $department): int => strlen((string) $department->name));
 
         foreach ($departments as $department) {
             $name = trim((string) ($department->name ?? ''));

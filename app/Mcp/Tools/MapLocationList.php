@@ -11,7 +11,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tool;
 
 #[Name('map.location_list')]
-#[Description('List and search campus map locations. For plain list-all requests, omit q and set limit directly. For category filtering, use category. Use sort_by+sort_order for deterministic ordering. cursor_id pagination is supported when sort_by=id.')]
+#[Description('List and search campus map locations. You can use the returned latitude and longitude to show a Google Maps link format like [Open Map](https://maps.google.com/?q={lat},{lon}). For listing, omit q and set limit. cursor_id pagination is supported when sort_by=id.')]
 class MapLocationList extends Tool
 {
     private const MAX_LIMIT = 100;
@@ -44,6 +44,11 @@ class MapLocationList extends Tool
      */
     public function handle(Request $request): Response
     {
+        $user = $request->get('user') ?? $request->user();
+        if (!$user) {
+            return Response::error('Unauthenticated');
+        }
+
         $q = trim((string) $this->param($request, 'q', ''));
         $category = trim((string) $this->param($request, 'category', ''));
         $cursorId = $this->param($request, 'cursor_id');
@@ -52,11 +57,11 @@ class MapLocationList extends Tool
         $limit = (int) $this->param($request, 'limit', 25);
         $limit = max(1, min(self::MAX_LIMIT, $limit));
 
-        if (! in_array($sortBy, self::ALLOWED_SORT_BY, true)) {
+        if (!in_array($sortBy, self::ALLOWED_SORT_BY, true)) {
             $sortBy = 'name';
         }
 
-        if (! in_array($sortOrder, self::ALLOWED_SORT_ORDER, true)) {
+        if (!in_array($sortOrder, self::ALLOWED_SORT_ORDER, true)) {
             $sortOrder = 'asc';
         }
 
@@ -71,9 +76,9 @@ class MapLocationList extends Tool
 
         if ($q !== '') {
             $query->where(function ($sub) use ($q) {
-                $sub->where('name', 'like', '%'.$q.'%')
-                    ->orWhere('description', 'like', '%'.$q.'%')
-                    ->orWhere('category', 'like', '%'.$q.'%');
+                $sub->where('name', 'like', '%' . $q . '%')
+                    ->orWhere('description', 'like', '%' . $q . '%')
+                    ->orWhere('category', 'like', '%' . $q . '%');
             });
         }
 
