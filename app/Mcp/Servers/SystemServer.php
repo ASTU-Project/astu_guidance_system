@@ -3,7 +3,9 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Prompts\DepartmentSummaryPrompt;
+use App\Mcp\Prompts\MapNavigationPrompt;
 use App\Mcp\Tools\DepartmentList;
+use App\Mcp\Tools\MapLocationList;
 use App\Mcp\Tools\PolicyList;
 use App\Mcp\Tools\StudentList;
 use Laravel\Mcp\Server;
@@ -20,7 +22,7 @@ class SystemServer extends Server
         DepartmentList::class,
         StudentList::class,
         PolicyList::class,
-        // DepartmentCreate::class,
+        MapLocationList::class,
     ];
 
     protected array $resources = [
@@ -29,5 +31,6 @@ class SystemServer extends Server
 
     protected array $prompts = [
         DepartmentSummaryPrompt::class,
+        MapNavigationPrompt::class,
     ];
 }
