@@ -78,24 +78,24 @@
             </div>
             <nav class="flex-1 py-3 px-2.5 overflow-y-auto space-y-0.5">
                 <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <i class="fa-solid fa-gauge w-4 text-center text-xs"></i>
                     <span>Dashboard</span>
                 </a>
                 <a href="{{ route('admin.students.index') }}" class="nav-item {{ request()->routeIs('admin.students.index') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <i class="fa-solid fa-user-graduate w-4 text-center text-xs"></i>
                     <span>Students</span>
                 </a>
                 <a href="{{ route('admin.calendar.index') }}" class="nav-item {{ request()->routeIs('admin.calendar.index') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <i class="fa-solid fa-calendar-days w-4 text-center text-xs"></i>
                     <span>Calendar</span>
                 </a>
                 <a href="{{ route('admin.map') }}" class="nav-item {{ request()->routeIs('admin.map') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <i class="fa-solid fa-map-location-dot w-4 text-center text-xs"></i>
                     <span>Map</span>
                 </a>
                 <a href="{{ route('admin.departments') }}" class="nav-item {{ request()->routeIs('admin.departments') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
-                    <span>Departments</span>
+                    <i class="fa-solid fa-building-columns w-4 text-center text-xs"></i>
+                    <span>Fields</span>
                 </a>
                 <a href="{{ route('admin.subjects.index') }}" class="nav-item {{ request()->routeIs('admin.subjects.index') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
                     <i class="fa-solid fa-book w-4 text-center text-xs"></i>
@@ -106,11 +106,11 @@
                     <span>Community</span>
                 </a>
                 <a href="{{ route('admin.policy') }}" class="nav-item {{ request()->routeIs('admin.policy') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <i class="fa-solid fa-scale-balanced w-4 text-center text-xs"></i>
                     <span>Policy</span>
                 </a>
                 <a href="{{ route('admin.automate') }}" class="nav-item {{ request()->routeIs('admin.automate') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">
-                    <i class="fa-solid fa-chart-simple w-4 text-center text-xs"></i>
+                    <i class="fa-solid fa-robot w-4 text-center text-xs"></i>
                     <span>Automate</span>
                 </a>
                 <a href="{{ route('admin.profile.edit') }}" class="nav-item {{ request()->routeIs('admin.profile.*') ? 'active' : '' }} flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium">

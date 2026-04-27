@@ -9,7 +9,8 @@ use Illuminate\Http\Request;
 
 class DepartmentController extends Controller
 {
-    public function index(){
+    public function index()
+    {
         $departments = Department::query()
             ->orderBy('name')
             ->get()
@@ -44,4 +45,17 @@ class DepartmentController extends Controller
     //         ->route('admin.departments')
     //         ->with('success', 'Department created successfully.');
     // }
+
+    public function update(Request $request, Department $department)
+    {
+        $validated = $request->validate([
+            'description' => ['nullable', 'string'],
+        ]);
+
+        $department->update([
+            'description' => $validated['description'],
+        ]);
+
+        return back()->with('success', 'Department description updated successfully.');
+    }
 }

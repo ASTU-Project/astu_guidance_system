@@ -15,6 +15,7 @@ class Department extends Model
         'code',
         'spot_limit',
         'min_gpa',
+        'description',
     ];
 
     protected $casts = [

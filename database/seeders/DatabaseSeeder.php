@@ -36,7 +36,7 @@ class DatabaseSeeder extends Seeder
         Department::query()->delete();
 
         Student::factory(50)->create();
-        $this->call(\Database\Seeders\AcademicRecordSeeder::class);
-        Department::factory(8)->create();
+        $this->call([\Database\Seeders\AcademicRecordSeeder::class, \Database\Seeders\PolicySeeder::class]);
+        Department::factory(30)->create();
     }
 }

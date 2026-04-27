@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
-@section('title', 'Departments Managment')
-@section('page-title', 'Departments')
+@section('title', 'Field Managment')
+@section('page-title', 'Field')
 
 @section('content')
     <div class="space-y-5">
@@ -25,17 +25,7 @@
         <div class="rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h3 class="text-lg font-semibold text-slate-950">Departments ({{ number_format($departments->count()) }})</h3>
-                </div>
-                <div class="flex items-center gap-2">
-                    {{-- <button
-                        type="button"
-                        onclick="document.getElementById('department-modal').classList.remove('hidden')"
-                        class="inline-flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-                    >
-                        <i class="fa fa-plus text-[11px]"></i>
-                        Add Department
-                    </button> --}}
+                    <h3 class="text-lg font-semibold text-slate-950">Field ({{ number_format($departments->count()) }})</h3>
                 </div>
             </div>
 
@@ -47,6 +37,7 @@
                             <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Code</th>
                             <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Spot Limit</th>
                             <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Min GPA</th>
+                            <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Description</th>
                             <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Students</th>
                             <th class="px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Load</th>
                         </tr>
@@ -64,8 +55,38 @@
                                 </td>
                                 <td class="px-5 py-4 text-sm text-slate-600">{{ number_format($department->spot_limit) }}</td>
                                 <td class="px-5 py-4 text-sm text-slate-600">{{ number_format((float) $department->min_gpa, 2) }}</td>
+                                <td class="px-5 py-4 text-sm text-slate-600">
+                                    <div class="flex items-center gap-2">
+                                        <span>{{ Str::limit($department->description, 60) }}</span>
+                                        <button type="button" class="text-blue-600 hover:underline text-xs font-semibold" onclick="openDescriptionModal({{ $department->id }}, '{{ addslashes($department->name) }}', '{{ addslashes(Str::replace("'", "&#39;", $department->description ?? '')) }}')">Edit</button>
+                                    </div>
+                                </td>
                                 <td class="px-5 py-4 text-sm text-slate-600">{{ number_format($department->student_count) }}</td>
                                 <td class="px-5 py-4">
+                                        <!-- Description Edit Modal -->
+                                        <div id="description-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4">
+                                            <div class="absolute inset-0 bg-slate-950/50" onclick="closeDescriptionModal()"></div>
+                                            <div class="relative w-full max-w-lg rounded-md bg-white p-6 shadow-2xl">
+                                                <div class="flex items-start justify-between gap-4 mb-2">
+                                                    <div>
+                                                        <h3 class="text-lg font-semibold text-slate-950">Edit Department Description</h3>
+                                                        <div class="text-xs text-slate-500 mt-1" id="modal-department-name"></div>
+                                                    </div>
+                                                </div>
+                                                <form id="description-form" method="POST">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <div class="mb-4">
+                                                        <label for="modal-description" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                                                        <textarea id="modal-description" name="description" rows="4" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none"></textarea>
+                                                    </div>
+                                                    <div class="flex items-center justify-end gap-2 pt-2">
+                                                        <button type="button" onclick="closeDescriptionModal()" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+                                                        <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Save</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
                                     @php
                                         $occupancy = $department->spot_limit > 0
                                             ? min(100, round(($department->student_count / $department->spot_limit) * 100))
@@ -91,52 +112,6 @@
             </div>
         </div>
     </div>
-    {{-- <div id="department-modal" class="{{ $errors->any() || old('name') || old('code') ? '' : 'hidden' }} fixed inset-0 z-50 flex items-center justify-center px-4">
-        <div class="absolute inset-0 bg-slate-950/50" onclick="document.getElementById('department-modal').classList.add('hidden')"></div>
-        <div class="relative w-full max-w-lg rounded-md bg-white p-6 shadow-2xl">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <h3 class="text-lg font-semibold text-slate-950">Add Department</h3>
-                </div>
-                <button type="button" onclick="document.getElementById('department-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700">
-                    <i class="fa fa-times"></i>
-                </button>
-            </div>
-
-            <form action="{{ route('admin.departments.store') }}" method="POST" class="mt-5 space-y-4">
-                @csrf
-                <div>
-                    <label for="department-name" class="mb-1 block text-sm font-medium text-slate-700">Department Name</label>
-                    <input id="department-name" type="text" name="name" value="{{ old('name') }}" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="e.g. Computer Science">
-                </div>
-
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                        <label for="department-code" class="mb-1 block text-sm font-medium text-slate-700">Code</label>
-                        <input id="department-code" type="text" name="code" value="{{ old('code') }}" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm uppercase text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="e.g. CS">
-                    </div>
-                    <div>
-                        <label for="department-spot-limit" class="mb-1 block text-sm font-medium text-slate-700">Spot Limit</label>
-                        <input id="department-spot-limit" type="number" min="1" name="spot_limit" value="{{ old('spot_limit') }}" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="120">
-                    </div>
-                </div>
-
-                <div>
-                    <label for="department-min-gpa" class="mb-1 block text-sm font-medium text-slate-700">Minimum GPA</label>
-                    <input id="department-min-gpa" type="number" min="0" max="4" step="0.01" name="min_gpa" value="{{ old('min_gpa') }}" class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-slate-400 focus:outline-none" placeholder="2.50">
-                </div>
-
-                <div class="flex items-center justify-end gap-2 pt-2">
-                    <button type="button" onclick="document.getElementById('department-modal').classList.add('hidden')" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                        Cancel
-                    </button>
-                    <button type="submit" class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-                        Save Department
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div> --}}
 @endsection
 
 @push('styles')
@@ -144,14 +119,20 @@
 @endpush
 
 @push('scripts')
-    {{-- <script>
+    <script>
+        function openDescriptionModal(id, name, description) {
+            document.getElementById('description-modal').classList.remove('hidden');
+            document.getElementById('modal-department-name').textContent = name;
+            document.getElementById('modal-description').value = description;
+            document.getElementById('description-form').action = '/admin/departments/' + id;
+        }
+        function closeDescriptionModal() {
+            document.getElementById('description-modal').classList.add('hidden');
+        }
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
-                const modal = document.getElementById('department-modal');
-                if (modal) {
-                    modal.classList.add('hidden');
-                }
+                closeDescriptionModal();
             }
         });
-    </script> --}}
+    </script>
 @endpush

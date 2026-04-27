@@ -20,6 +20,7 @@ use App\Http\Controllers\Student\NavigateController as StudentNavigateController
 use App\Http\Controllers\Student\ProfileController as StudentProfileController;
 use App\Http\Controllers\Student\StudentChatController;
 use App\Http\Controllers\Student\StatusController as StudentStatusController;
+use App\Http\Controllers\Student\DepartmentGuideController as StudentDepartmentGuideController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\InformationController;
@@ -50,8 +51,8 @@ Route::middleware(['auth:web'])->group(function () {
     Route::prefix('admin')
         ->name('admin.')
         ->group(function () {
-        Route::resource('students', StudentController::class);
-    });
+            Route::resource('students', StudentController::class);
+        });
 
     Route::get('/admin/calendar', [CalendarController::class, 'index'])->name('admin.calendar.index');
     Route::post('/admin/calendar', [CalendarController::class, 'store'])->name('admin.calendar.store');
@@ -93,6 +94,7 @@ Route::middleware(['auth:web'])->group(function () {
 });
 
 Route::middleware(['auth:student'])->group(function () {
+    Route::get('/student', [StudentDashboardController::class, 'index'])->name('student.dashboard');
     Route::get('/student/dashboard', [StudentDashboardController::class, 'index'])->name('student.dashboard');
 
     Route::get('/student/status', [StudentStatusController::class, 'index'])->name('student.status');
@@ -103,9 +105,7 @@ Route::middleware(['auth:student'])->group(function () {
 
     Route::get('/student/navigate', [StudentNavigateController::class, 'index'])->name('student.navigate');
 
-    Route::get('/student/department-guide', function () {
-        return view('student.department-guide');
-    })->name('student.department-guide');
+    Route::get('/student/department-guide', [StudentDepartmentGuideController::class, 'index'])->name('student.department-guide');
 
     Route::get('/student/community', function () {
         return view('student.community');
