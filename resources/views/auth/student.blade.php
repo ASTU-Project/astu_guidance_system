@@ -27,7 +27,7 @@
 
                 <div>
                     <label for="student_id" class="mb-2 block text-sm font-medium text-slate-700">Student ID</label>
-                    <input id="student_id" name="student_id" type="text" value="{{ old('student_id') }}" placeholder="UGR/12345/14" class="block w-full rounded-md border border-slate-320 bg-slate-50 px-3 py-2 text-slate-900 outline-none transition focus:border-cyan-500" required />
+                    <input id="student_id" name="student_id" type="text" value="{{ old('student_id') }}" placeholder="UGR/XXXXX/XX" class="block w-full rounded-md border border-slate-320 bg-slate-50 px-3 py-2 text-slate-900 outline-none transition focus:border-cyan-500" required />
                     @error('student_id')
                         <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
                     @enderror
@@ -43,7 +43,12 @@
 
                 <button type="submit" class="w-full rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2">Sign in as student</button>
             </form>
+             <p class="mt-6 text-center text-sm text-slate-600">
+                Prefer password login?
+                <a href="{{ route('student.qrlogin') }}" class="font-semibold text-cyan-700 hover:text-cyan-800">Use Smart login</a>
+            </p>
         </div>
+        
     </div>
 </body>
 </html>

@@ -1,3 +1,4 @@
+
 <?php
 
 use App\Http\Controllers\Admin\CalendarController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\CommunityController;
 use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\QrLoginController;
 use App\Http\Controllers\Auth\StudentLoginController;
 use App\Http\Controllers\Student\CalendarController as StudentCalendarController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
@@ -36,6 +38,8 @@ Route::middleware(['guest:web'])->group(function () {
 });
 
 Route::middleware(['guest:student'])->group(function () {
+    Route::get('/qr-login', [QrLoginController::class, 'showQrLoginForm'])->name('student.qrlogin');
+    Route::post('/qr-login', [QrLoginController::class, 'qrLogin'])->name('student.qrlogin.submit');
     Route::get('/login', [StudentLoginController::class, 'showLoginForm'])->name('student.login');
     Route::post('/login', [StudentLoginController::class, 'login'])->name('student.login.submit');
     Route::get('/student/login', [StudentLoginController::class, 'showLoginForm']);

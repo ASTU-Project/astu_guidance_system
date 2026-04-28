@@ -22,7 +22,8 @@ class DepartmentFactory extends Factory
         ['name' => 'Humanities & Social Sciences', 'code' => 'HSS', 'min_gpa' => 2.00, 'description' => 'School of Humanities and Social Sciences.'],
         // Year 2 Sem 2+ specific departments (EEC)
         ['name' => 'Software Engineering', 'code' => 'SE', 'min_gpa' => 2.75, 'description' => 'Department of Software Engineering.'],
-        ['name' => 'Computer Science & Engineering', 'code' => 'CSE', 'min_gpa' => 2.75, 'description' => 'Department of Computer Science & Engineering.'],
+        ['name' => 'Computer Science', 'code' => 'CSE', 'min_gpa' => 2.75, 'description' => 'Department of Computer Science.'],
+        ['name' => 'Electrical Engineering', 'code' => 'EE', 'min_gpa' => 2.75, 'description' => 'Department of Electrical Engineering.'],
         ['name' => 'Electronics & Communication Engineering', 'code' => 'ECE', 'min_gpa' => 2.75, 'description' => 'Department of Electronics & Communication Engineering.'],
         ['name' => 'Electrical Power & Control Engineering', 'code' => 'EPCE', 'min_gpa' => 2.75, 'description' => 'Department of Electrical Power & Control Engineering.'],
         // MCME
@@ -52,12 +53,19 @@ class DepartmentFactory extends Factory
         ['name' => 'Communication', 'code' => 'COMM', 'min_gpa' => 2.00, 'description' => 'Department of Communication.'],
     ];
 
-    protected static int $index = 0;
-
     public function definition(): array
     {
-        $dept = self::$departments[self::$index % count(self::$departments)];
-        self::$index++;
+        try {
+            $dept = $this->faker->unique()->randomElement(self::$departments);
+        } catch (\OverflowException $e) {
+            // If we run out of unique departments, generate a synthetic one
+            $dept = [
+                'name' => $this->faker->unique()->words(3, true),
+                'code' => strtoupper($this->faker->unique()->lexify('???')),
+                'min_gpa' => $this->faker->randomFloat(2, 2.0, 4.0),
+                'description' => $this->faker->sentence(),
+            ];
+        }
 
         return [
             'name'       => $dept['name'],
