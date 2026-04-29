@@ -63,4 +63,21 @@ class ProfileController extends Controller
             ->route('student.profile.edit')
             ->with('password_success', 'Password updated successfully.');
     }
+
+    public function updateQrLogin(Request $request): RedirectResponse
+    {
+        $student = $request->user('student');
+
+        $validated = $request->validate([
+            'qr_login_enabled' => ['sometimes', 'boolean'],
+        ]);
+
+        $student->update([
+            'qr_login_enabled' => $validated['qr_login_enabled'] ?? false,
+        ]);
+
+        return redirect()
+            ->route('student.profile.edit')
+            ->with('qr_success', 'QR Login preference updated successfully.');
+    }
 }

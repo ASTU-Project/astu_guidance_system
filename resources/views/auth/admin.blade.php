@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Login | ASTU Management System</title>
-    @vite(['resources/css/app.css'])
+    @vite(['resources/css/app.css', 'resources/js/app.jsx'])
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-100 via-white to-cyan-50 text-slate-900">
     <div class="relative mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-14 sm:px-6 lg:px-10">

@@ -123,6 +123,7 @@ Route::middleware(['auth:student'])->group(function () {
     Route::get('/student/profile', [StudentProfileController::class, 'edit'])->name('student.profile.edit');
     Route::put('/student/profile', [StudentProfileController::class, 'updateProfile'])->name('student.profile.update');
     Route::put('/student/profile/password', [StudentProfileController::class, 'updatePassword'])->name('student.profile.password.update');
+    Route::put('/student/profile/qr-login', [StudentProfileController::class, 'updateQrLogin'])->name('student.profile.qr-login.update');
 
     Route::post('/student/logout', [StudentLoginController::class, 'logout'])->name('student.logout');
 });

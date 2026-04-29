@@ -31,6 +31,9 @@ class QrLoginController extends Controller
         if (!$student) {
             return response()->json(['success' => false, 'message' => 'Student not found.'], 401);
         }
+        if (! $student->qr_login_enabled) {
+            return response()->json(['success' => false, 'message' => 'QR login is disabled for this account.'], 403);
+        }
         Auth::guard('student')->login($student);
         Session::regenerate();
         return response()->json(['success' => true, 'redirect' => url('/student/dashboard')]);

@@ -24,12 +24,14 @@ class Student extends Authenticatable
         'current_section',
         'cgpa',
         'password',
+        'qr_login_enabled',
     ];
 
     protected $casts = [
         'current_year' => 'integer',
         'cgpa' => 'decimal:2',
         'password' => 'hashed',
+        'qr_login_enabled' => 'boolean',
     ];
 
     protected $hidden = [
