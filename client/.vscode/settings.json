@@ -1,0 +1,30 @@
+{
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+  "editor.suggestOnTriggerCharacters": true,
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact",
+    "typescript": "typescriptreact"
+  },
+  "tailwindCSS.classAttributes": [
+    "class",
+    "className",
+    "ngClass",
+    "class:list"
+  ],
+  "tailwindCSS.includeLanguages": {
+    "javascript": "javascript",
+    "javascriptreact": "html",
+    "typescriptreact": "html"
+  },
+  "tailwindCSS.experimental.configFile": {
+    "tailwind.config.js": [
+      "index.html",
+      "src/**/*.{js,jsx}"
+    ]
+  }
+}
