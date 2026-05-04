@@ -34,7 +34,7 @@ export default function GuestPage() {
           </div>
           <div className="rounded-xl bg-white/5 p-6">
             <h3 className="font-semibold">Support</h3>
-            <p className="mt-2 text-sm text-slate-300">Get help from our support team.</p>
+            <p className="mt-2 text-sm text-slate-300">testGet help from our support team.</p>
           </div>
         </div>
       </section>
