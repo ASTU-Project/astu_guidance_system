@@ -7,7 +7,7 @@ export default function App() {
         </div>
 
         <section className="space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
+          <h1 className=" text-4xl font-bold tracking-tight sm:text-6xl">
             ASTU Guidance client starter
           </h1>
           <p className="max-w-2xl text-lg text-slate-300">
