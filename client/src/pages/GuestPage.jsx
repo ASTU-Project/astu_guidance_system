@@ -12,7 +12,16 @@ export default function GuestPage() {
             <a className="text-slate-300 hover:text-white" href="#">Contact</a>
           </nav>
         </div>
+                  <div className="mx-auto max-w-5xl px-6 flex items-center justify-between">
+          <h1 className="text-2xl font-bold">ASTU Guidance</h1>
+          <nav className="space-x-4 text-sm">
+            <a className="text-slate-300 hover:text-white" href="#">Home</a>
+            <a className="text-slate-300 hover:text-white" href="#">About</a>
+            <a className="text-slate-300 hover:text-white" href="#">Contact</a>
+          </nav>
+        </div>
       </header>
+        
 
       <section className="mx-auto max-w-4xl px-6 py-20 text-center">
         <h2 className="text-4xl font-extrabold sm:text-5xl">Welcome to ASTU Guidance</h2>
